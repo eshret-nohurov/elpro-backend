@@ -27,6 +27,12 @@ const SubcategorySchema = new mongoose.Schema({
 		ref: 'Category',
 		required: true,
 	},
+	products: [
+		{
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'Product',
+		},
+	],
 	createdAt: {
 		type: Date,
 		default: Date.now,
@@ -44,10 +50,21 @@ SubcategorySchema.post('save', async function (doc) {
 });
 
 // Автоматическое удаление подкатегории из категории при удалении
-SubcategorySchema.post('remove', async function (doc) {
+SubcategorySchema.post('deleteOne', { document: true }, async function (doc) {
 	await mongoose
 		.model('Category')
 		.updateOne({ _id: doc.category }, { $pull: { subcategories: doc._id } });
+});
+
+SubcategorySchema.pre('deleteOne', { document: true }, async function (next) {
+	// Удаляем эту подкатегорию из всех товаров
+	await mongoose
+		.model('Product')
+		.updateMany(
+			{ subcategories: this._id },
+			{ $pull: { subcategories: this._id } }
+		);
+	next();
 });
 
 module.exports = mongoose.model('Subcategory', SubcategorySchema);

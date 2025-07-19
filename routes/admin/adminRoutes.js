@@ -1,13 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../../utils/multerConfig');
+const PromoBannerController = require('../../controllers/admin/promoBannerController');
+const FooterBannerController = require('../../controllers/admin/footerBannerController');
+const mainBannerController = require('../../controllers/admin/mainBannerController');
 const catalogController = require('../../controllers/admin/catalogController');
 const authMiddleware = require('../../middlewares/authMiddleware');
 
+const ProductController = require('../../controllers/admin/productController');
+
 router.use(authMiddleware);
 
-// Категории
+//! Категории
 router.get('/categories', catalogController.getCategories);
+
+router.get('/category/:id', catalogController.getCategoryById);
+
+router.get(
+	'/categories-for-subcategory',
+	catalogController.getCategoriesForSubcategory
+);
 
 router.post(
 	'/create_category',
@@ -15,21 +27,111 @@ router.post(
 	catalogController.createCategory
 );
 
-router.delete('/delete_category/:id', catalogController.deleteCategory);
-
-//! =====================================================================
-// Категории
-
-router.put(
-	'/categories/:id',
+router.post(
+	'/update_category/:id',
 	upload.single('icon'),
-	(req, res, next) => {
-		console.log('File received:', req.file);
-		console.log('Body:', req.body);
-		next();
-	},
 	catalogController.updateCategory
 );
-router.delete('/categories/:id', catalogController.deleteCategory);
+
+router.delete('/delete_category/:id', catalogController.deleteCategory);
+
+//! Подкатегории
+router.get('/subcategories', catalogController.getSubCategories);
+
+router.get('/subcategory/:id', catalogController.getSubCategoryById);
+
+router.post(
+	'/create_subcategory',
+	upload.single('icon'),
+	catalogController.createSubcategory
+);
+
+router.post(
+	'/update_subcategory/:id',
+	upload.single('icon'),
+	catalogController.updateSubcategory
+);
+
+router.delete('/delete_subcategory/:id', catalogController.deleteSubcategory);
+
+//! Главный баннер
+router.get('/main_banner_slides', mainBannerController.getSlides);
+
+router.get('/main_banner_slide/:id', mainBannerController.getSlideById);
+
+router.post(
+	'/create_main_banner_slide',
+	upload.single('image'),
+	mainBannerController.createSlide
+);
+
+router.post(
+	'/update_main_banner_slide/:id',
+	upload.single('image'),
+	mainBannerController.updateSlide
+);
+
+router.delete(
+	'/delete_main_banner_slide/:id',
+	mainBannerController.deleteSlide
+);
+
+//! Промо баннер
+router.get('/promo_banner_slides', PromoBannerController.getSlides);
+
+router.get('/promo_banner_slide/:id', PromoBannerController.getSlideById);
+
+router.post(
+	'/create_promo_banner_slide',
+	upload.single('image'),
+	PromoBannerController.createSlide
+);
+
+router.post(
+	'/update_promo_banner_slide/:id',
+	upload.single('image'),
+	PromoBannerController.updateSlide
+);
+
+router.delete(
+	'/delete_promo_banner_slide/:id',
+	PromoBannerController.deleteSlide
+);
+
+//! Футер баннер
+router.get('/footer_banner_slides', FooterBannerController.getSlides);
+
+router.get('/footer_banner_slide/:id', FooterBannerController.getSlideById);
+
+router.post(
+	'/create_footer_banner_slide',
+	upload.single('image'),
+	FooterBannerController.createSlide
+);
+
+router.post(
+	'/update_footer_banner_slide/:id',
+	upload.single('image'),
+	FooterBannerController.updateSlide
+);
+
+router.delete(
+	'/delete_footer_banner_slide/:id',
+	FooterBannerController.deleteSlide
+);
+
+//! PRODUCT
+router.post(
+	'/create_product',
+	upload.array('images', 4),
+	ProductController.createProduct
+);
+
+router.post(
+	'/selected_subcategories',
+	ProductController.getSubcategoriesByCategories
+);
+
+router.get('/search_products', ProductController.searchProducts);
 
 module.exports = router;

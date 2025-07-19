@@ -45,13 +45,13 @@ async function processImage(file, modelName, isIcon = false) {
 			}
 
 			// Сохраняем оригинал (если нужно)
-			const ext =
+			/* const ext =
 				file.mimetype.split('/')[1] === 'jpeg'
 					? 'jpg'
 					: file.mimetype.split('/')[1];
 			const originalPath = path.join(uploadDir, `${filename}.${ext}`);
 			fs.writeFileSync(originalPath, file.buffer);
-			result.original = `/uploads/${modelName}/${filename}.${ext}`;
+			result.original = `/uploads/${modelName}/${filename}.${ext}`; */
 
 			// Конвертируем в WebP
 			const image = await Jimp.read(file.buffer);

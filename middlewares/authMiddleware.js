@@ -8,7 +8,6 @@ const authMiddleware = async (req, res, next) => {
 
 		if (!authHeader || !authHeader.startsWith('Bearer ')) {
 			return res.status(401).json({
-				success: false,
 				message: 'Access denied. No token provided.',
 			});
 		}
@@ -22,7 +21,6 @@ const authMiddleware = async (req, res, next) => {
 		const user = await User.findById(decoded.userId).select('-password');
 		if (!user) {
 			return res.status(401).json({
-				success: false,
 				message: 'Invalid token. User not found.',
 			});
 		}
@@ -33,13 +31,11 @@ const authMiddleware = async (req, res, next) => {
 	} catch (error) {
 		if (error.name === 'TokenExpiredError') {
 			return res.status(401).json({
-				success: false,
 				message: 'Token expired. Please log in again.',
 			});
 		}
 
 		res.status(400).json({
-			success: false,
 			message: 'Invalid token.',
 		});
 	}

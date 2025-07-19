@@ -15,3 +15,6 @@ dist/
 .next/
 out/
 .DS_Store
+
+/uploads/*
+!/uploads/.gitkeep 

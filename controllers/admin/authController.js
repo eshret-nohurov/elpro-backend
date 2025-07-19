@@ -12,7 +12,6 @@ const authController = {
 			const existingUser = await User.findOne({ username });
 			if (existingUser) {
 				return res.status(400).json({
-					success: false,
 					message: 'Username already exists',
 				});
 			}
@@ -22,12 +21,10 @@ const authController = {
 			await user.save();
 
 			res.status(201).json({
-				success: true,
 				message: 'Admin user created successfully',
 			});
 		} catch (error) {
 			res.status(500).json({
-				success: false,
 				message: error.message,
 			});
 		}
@@ -40,7 +37,6 @@ const authController = {
 
 			if (!user) {
 				return res.status(401).json({
-					success: false,
 					message: 'Invalid credentials',
 				});
 			}
@@ -49,7 +45,6 @@ const authController = {
 			const isMatch = await user.comparePassword(password);
 			if (!isMatch) {
 				return res.status(401).json({
-					success: false,
 					message: 'Invalid credentials',
 				});
 			}
@@ -62,7 +57,6 @@ const authController = {
 			);
 
 			res.json({
-				success: true,
 				message: 'Logged in successfully',
 				token,
 				user: {
@@ -73,7 +67,6 @@ const authController = {
 			});
 		} catch (error) {
 			res.status(500).json({
-				success: false,
 				message: error.message,
 			});
 		}
