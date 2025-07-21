@@ -1,5 +1,21 @@
 const mongoose = require('mongoose');
 
+const SpecSchema = new mongoose.Schema(
+	{
+		type: {
+			ru: { type: String, required: true },
+			tm: { type: String },
+			en: { type: String },
+		},
+		value: {
+			ru: { type: String, required: true },
+			tm: { type: String },
+			en: { type: String },
+		},
+	},
+	{ _id: false }
+);
+
 const ProductSchema = new mongoose.Schema({
 	// Название товара на 3 языках
 	name: {
@@ -50,34 +66,23 @@ const ProductSchema = new mongoose.Schema({
 	},
 
 	// Характеристики
-	specifications: [
-		{
-			type: {
-				ru: { type: String, required: true },
-				tm: { type: String },
-				en: { type: String },
-			},
-			value: {
-				ru: { type: String, required: true },
-				tm: { type: String },
-				en: { type: String },
-			},
-		},
-	],
+	specifications: [SpecSchema],
 
 	// Связанные продукты (максимум 4)
-	relatedProducts: [
-		{
-			type: mongoose.Schema.Types.ObjectId,
-			ref: 'Product',
-			validate: {
-				validator: function (v) {
-					return v.length <= 4;
-				},
-				message: 'Максимум 4 связанных товара',
+	relatedProducts: {
+		type: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: 'Product',
 			},
+		],
+		validate: {
+			validator: function (arr) {
+				return arr.length <= 4;
+			},
+			message: 'Максимум 4 связанных товара',
 		},
-	],
+	},
 
 	// Категории (обязательный массив с минимум 1 элементом)
 	categories: {

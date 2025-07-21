@@ -12,21 +12,41 @@ class ProductController {
 				stock,
 				shortDescription,
 				fullDescription,
-
 				relatedProducts,
 				categories,
 				subcategories,
-
-				// specifications,
+				specifications,
 			} = req.body;
 
-			const files = req.files; // Ожидаем массив файлов
+			const files = req.files;
 
 			// 1. Парсинг сложных JSON-полей
 			const parsedName = JSON.parse(name);
 			const parsedShortDesc = JSON.parse(shortDescription);
 			const parsedFullDesc = JSON.parse(fullDescription);
-			// const parsedSpecs = JSON.parse(specifications);
+
+			// Обработка характеристик
+			let parsedSpecs = [];
+			if (specifications) {
+				try {
+					parsedSpecs = JSON.parse(specifications)
+						.filter(spec => spec?.type?.ru && spec?.value?.ru)
+						.map(spec => ({
+							type: {
+								ru: spec.type.ru.trim(),
+								tm: spec.type.tm?.trim() || spec.type.ru.trim(),
+								en: spec.type.en?.trim() || spec.type.ru.trim(),
+							},
+							value: {
+								ru: spec.value.ru.trim(),
+								tm: spec.value.tm?.trim() || spec.value.ru.trim(),
+								en: spec.value.en?.trim() || spec.value.ru.trim(),
+							},
+						}));
+				} catch (e) {
+					console.error('Invalid JSON in specifications', e);
+				}
+			}
 
 			// 2. Валидация обязательных полей
 			if (!parsedName.ru) throw new Error('Русское название обязательно');
@@ -99,18 +119,18 @@ class ProductController {
 					en: parsedFullDesc.en || parsedFullDesc.ru,
 				},
 				images: imagePaths,
-				// specifications: parsedSpecs.map(spec => ({
-				// 	type: {
-				// 		ru: spec.type.ru,
-				// 		tm: spec.type.tm || spec.type.ru,
-				// 		en: spec.type.en || spec.type.ru,
-				// 	},
-				// 	value: {
-				// 		ru: spec.value.ru,
-				// 		tm: spec.value.tm || spec.value.ru,
-				// 		en: spec.value.en || spec.value.ru,
-				// 	},
-				// })),
+				specifications: parsedSpecs.map(spec => ({
+					type: {
+						ru: spec.type.ru,
+						tm: spec.type.tm,
+						en: spec.type.en,
+					},
+					value: {
+						ru: spec.value.ru,
+						tm: spec.value.tm,
+						en: spec.value.en,
+					},
+				})),
 				relatedProducts: relatedProducts ? JSON.parse(relatedProducts) : [],
 				categories: JSON.parse(categories),
 				subcategories: subcategories ? JSON.parse(subcategories) : [],
@@ -225,14 +245,12 @@ class ProductController {
 			}));
 
 			res.json({
-				success: true,
 				count: results.length,
 				results,
 			});
 		} catch (error) {
 			console.error('Ошибка поиска товаров:', error);
 			res.status(500).json({
-				success: false,
 				error: 'Внутренняя ошибка сервера',
 				details: error.message,
 			});
