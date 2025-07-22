@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const upload = require('../../utils/multerConfig');
 const PromoBannerController = require('../../controllers/admin/promoBannerController');
+const ProductsSectionController = require('../../controllers/admin/productsSectionController');
 const FooterBannerController = require('../../controllers/admin/footerBannerController');
 const mainBannerController = require('../../controllers/admin/mainBannerController');
 const catalogController = require('../../controllers/admin/catalogController');
@@ -121,10 +122,20 @@ router.delete(
 );
 
 //! PRODUCT
+router.get('/products', ProductController.getProducts);
+
+router.get('/product/:id', ProductController.getProductById);
+
 router.post(
 	'/create_product',
 	upload.array('images', 4),
 	ProductController.createProduct
+);
+
+router.post(
+	'/update_product/:id',
+	upload.array('images', 4),
+	ProductController.updateProduct
 );
 
 router.post(
@@ -133,5 +144,30 @@ router.post(
 );
 
 router.get('/search_products', ProductController.searchProducts);
+
+router.delete('/delete_product/:id', ProductController.deleteProduct);
+
+//! PRODUCTS SECTION
+router.get('/products_section', ProductsSectionController.getProductsSection);
+
+router.get(
+	'/products_section/:id',
+	ProductsSectionController.getProductsSectionById
+);
+
+router.post(
+	'/create_products_section',
+	ProductsSectionController.createProductsSection
+);
+
+router.post(
+	'/update_products_section/:id',
+	ProductsSectionController.updateProductsSection
+);
+
+router.delete(
+	'/delete_products_section/:id',
+	ProductsSectionController.deleteProductsSection
+);
 
 module.exports = router;

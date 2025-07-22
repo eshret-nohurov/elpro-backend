@@ -19,7 +19,7 @@ class CatalogController {
 				.sort({ _id: -1 })
 				.skip(skip)
 				.limit(limit)
-				.select('-__v -icon -subcategories')
+				.select('-__v -icon -subcategories -products')
 				.lean();
 
 			// 3. Формируем ответ с метаданными пагинации
@@ -356,7 +356,7 @@ class CatalogController {
 				.sort({ _id: -1 })
 				.skip(skip)
 				.limit(limit)
-				.select('-__v -icon -category')
+				.select('-__v -icon -category -products')
 				.lean();
 
 			// 3. Формируем ответ с метаданными пагинации

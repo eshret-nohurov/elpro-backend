@@ -155,6 +155,10 @@ ProductSchema.post('deleteOne', { document: true }, async function (doc) {
 				{ $pull: { products: doc._id } }
 			);
 	}
+
+	await mongoose
+		.model('ProductsSection')
+		.updateMany({ products: doc._id }, { $pull: { products: doc._id } });
 });
 
 module.exports = mongoose.model('Product', ProductSchema);
