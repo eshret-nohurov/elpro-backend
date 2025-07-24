@@ -122,9 +122,9 @@ class CatalogController {
 			const file = req.file;
 
 			// 1. Валидация входящих данных
-			if (!file) {
+			/* 	if (!file) {
 				throw new Error('Иконка обязательна');
-			}
+			} */
 
 			if (!parsedName.ru) {
 				throw new Error('Русское название обязательно');
@@ -141,8 +141,11 @@ class CatalogController {
 			}
 
 			// 2. Обработка иконки
-			const { svg, png } = await processImage(file, 'categories', true);
-			const iconPath = svg || png;
+			const iconPath = '';
+			if (file) {
+				const { svg, png } = await processImage(file, 'categories', true);
+				iconPath = svg || png;
+			}
 
 			// 3. Подготовка подкатегорий
 			let subcategoriesIds = [];
@@ -166,7 +169,7 @@ class CatalogController {
 					en: parsedName.en || parsedName.ru,
 				},
 				url,
-				icon: iconPath,
+				icon: iconPath || '',
 				subcategories: subcategoriesIds,
 			});
 
@@ -428,9 +431,9 @@ class CatalogController {
 			const file = req.file;
 
 			// 1. Валидация входящих данных
-			if (!file) {
+			/* if (!file) {
 				throw new Error('Иконка обязательна');
-			}
+			} */
 
 			if (!parsedName.ru) {
 				throw new Error('Русское название обязательно');
@@ -457,8 +460,11 @@ class CatalogController {
 			}
 
 			// 4. Обработка иконки
-			const { svg, png } = await processImage(file, 'subcategories', true);
-			const iconPath = svg || png;
+			const iconPath = '';
+			if (file) {
+				const { svg, png } = await processImage(file, 'subcategories', true);
+				iconPath = svg || png;
+			}
 
 			// 5. Создание подкатегории
 			const subcategory = new Subcategory({
@@ -468,7 +474,7 @@ class CatalogController {
 					en: parsedName.en || parsedName.ru,
 				},
 				url,
-				icon: iconPath,
+				icon: iconPath || '',
 				category: existingCategory._id,
 			});
 
@@ -477,7 +483,6 @@ class CatalogController {
 			await subcategory.save();
 
 			// Post-save hook автоматически добавит подкатегорию в массив subcategories категории
-
 			res.status(201).json({
 				data: subcategory,
 				message: 'Подкатегория успешно создана',

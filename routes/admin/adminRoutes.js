@@ -3,6 +3,7 @@ const router = express.Router();
 const upload = require('../../utils/multerConfig');
 const PromoBannerController = require('../../controllers/admin/promoBannerController');
 const ProductsSectionController = require('../../controllers/admin/productsSectionController');
+const AuthController = require('../../controllers/admin/authController');
 const FooterBannerController = require('../../controllers/admin/footerBannerController');
 const mainBannerController = require('../../controllers/admin/mainBannerController');
 const catalogController = require('../../controllers/admin/catalogController');
@@ -169,5 +170,16 @@ router.delete(
 	'/delete_products_section/:id',
 	ProductsSectionController.deleteProductsSection
 );
+
+//! USERS
+router.get('/users', AuthController.getUsers);
+
+router.get('/users/:id', AuthController.getUserById);
+
+router.post('/users/create', AuthController.createUser);
+
+router.post('/users/update/:id', AuthController.updateUsers);
+
+router.delete('/users/delete/:id', AuthController.deleteUser);
 
 module.exports = router;

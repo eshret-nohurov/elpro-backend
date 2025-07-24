@@ -70,8 +70,6 @@ class ProductsSectionController {
 	}
 
 	async createProductsSection(req, res) {
-		console.log('req.body:', req.body);
-
 		try {
 			const { name, products = [] } = req.body;
 

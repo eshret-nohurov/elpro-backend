@@ -15,12 +15,11 @@ const SubcategorySchema = new mongoose.Schema({
 				return /^[a-z-]+$/.test(v);
 			},
 			message: props =>
-				`${props.value} is not valid! Only lowercase Latin letters and hyphens are allowed, no numbers.`,
+				`В поле url ${props.value}! Разрешены только нижние латинские буквы и дефисы.`,
 		},
 	},
 	icon: {
 		type: String,
-		required: true,
 	},
 	category: {
 		type: mongoose.Schema.Types.ObjectId,
