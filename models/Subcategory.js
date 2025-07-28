@@ -12,10 +12,10 @@ const SubcategorySchema = new mongoose.Schema({
 		unique: true,
 		validate: {
 			validator: function (v) {
-				return /^[a-z-]+$/.test(v);
+				return /^[a-z0-9-]+$/.test(v);
 			},
 			message: props =>
-				`В поле url ${props.value}! Разрешены только нижние латинские буквы и дефисы.`,
+				`Недопустимый URL: "${props.value}". Разрешены только латинские буквы в нижнем регистре, цифры и дефисы.`,
 		},
 	},
 	icon: {

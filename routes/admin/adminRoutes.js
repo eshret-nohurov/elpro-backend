@@ -4,6 +4,7 @@ const upload = require('../../utils/multerConfig');
 const PromoBannerController = require('../../controllers/admin/promoBannerController');
 const ProductsSectionController = require('../../controllers/admin/productsSectionController');
 const AuthController = require('../../controllers/admin/authController');
+const SettingsController = require('../../controllers/admin/settingsController');
 const FooterBannerController = require('../../controllers/admin/footerBannerController');
 const mainBannerController = require('../../controllers/admin/mainBannerController');
 const catalogController = require('../../controllers/admin/catalogController');
@@ -181,5 +182,12 @@ router.post('/users/create', AuthController.createUser);
 router.post('/users/update/:id', AuthController.updateUsers);
 
 router.delete('/users/delete/:id', AuthController.deleteUser);
+
+//! Settings
+router.get('/settings', SettingsController.getSettings);
+
+router.post('/settings/create', SettingsController.createSettings);
+
+router.post('/settings/update/:id', SettingsController.updateSettings);
 
 module.exports = router;

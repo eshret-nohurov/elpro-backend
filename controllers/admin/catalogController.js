@@ -141,7 +141,7 @@ class CatalogController {
 			}
 
 			// 2. Обработка иконки
-			const iconPath = '';
+			let iconPath = '';
 			if (file) {
 				const { svg, png } = await processImage(file, 'categories', true);
 				iconPath = svg || png;
