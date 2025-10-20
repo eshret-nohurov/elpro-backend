@@ -28,7 +28,7 @@ class HomePageController {
 				.lean();
 
 			const productsSection = await ProductsSectionModel.find()
-				.sort({ _id: -1 })
+				.sort({ position: 1 })
 				.lean();
 
 			const allProductIds = [];
@@ -43,7 +43,7 @@ class HomePageController {
 				stock: { $gt: 0 },
 			})
 				.select(
-					'-__v -createdAt -shortDescription -fullDescription -specifications -relatedProducts -categories -subcategories'
+					'-__v -createdAt -shortDescription -fullDescription -specifications -relatedProducts -categories'
 				)
 				.lean();
 
@@ -66,7 +66,7 @@ class HomePageController {
 					.sort({ _id: -1 })
 					.limit(8)
 					.select(
-						'-__v -createdAt -shortDescription -fullDescription -specifications -relatedProducts -categories -subcategories'
+						'-__v -createdAt -shortDescription -fullDescription -specifications -relatedProducts -categories'
 					)
 					.lean();
 

@@ -20,6 +20,10 @@ const ProductsSectionSchema = new mongoose.Schema({
 			message: 'Максимум 8 товара',
 		},
 	},
+	position: {
+		type: Number,
+		default: 1,
+	},
 	createdAt: {
 		type: Date,
 		default: Date.now,

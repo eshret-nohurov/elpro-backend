@@ -13,7 +13,11 @@ const app = express();
 
 // Настройки CORS для Express
 const corsOptions = {
-	origin: [process.env.CLIENT_URL, process.env.ADMIN_URL].filter(Boolean),
+	origin: [
+		process.env.CLIENT_URL,
+		process.env.ADMIN_URL,
+		'http://localhost:3001',
+	].filter(Boolean),
 	methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
 	credentials: true,
 	optionsSuccessStatus: 204,

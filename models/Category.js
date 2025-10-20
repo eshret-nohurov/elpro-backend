@@ -24,10 +24,15 @@ const CategorySchema = new mongoose.Schema({
 	icon: {
 		type: String,
 	},
-	subcategories: [
+	parent: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: 'Category',
+		default: null,
+	},
+	children: [
 		{
 			type: mongoose.Schema.Types.ObjectId,
-			ref: 'Subcategory',
+			ref: 'Category',
 		},
 	],
 	products: [
@@ -36,6 +41,10 @@ const CategorySchema = new mongoose.Schema({
 			ref: 'Product',
 		},
 	],
+	position: {
+		type: Number,
+		default: 1,
+	},
 	createdAt: {
 		type: Date,
 		default: Date.now,

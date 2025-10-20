@@ -71,9 +71,13 @@ class ProductsSectionController {
 
 	async createProductsSection(req, res) {
 		try {
-			const { name, products = [] } = req.body;
+			const { name, products = [], position } = req.body;
 
 			if (!name?.ru) throw new Error('Русское название обязательно');
+
+			if (!position) {
+				throw new Error('position обязателен');
+			}
 
 			const existingProducts =
 				products.length > 0
@@ -94,6 +98,7 @@ class ProductsSectionController {
 					en: name.en || name.ru,
 				},
 				products,
+				position,
 			});
 
 			await productsSectionOB.validate();
@@ -115,7 +120,7 @@ class ProductsSectionController {
 	async updateProductsSection(req, res) {
 		try {
 			const { id } = req.params;
-			const { name, products = [] } = req.body;
+			const { name, products = [], position } = req.body;
 
 			const existingSection = await ProductsSection.findById(id);
 			if (!existingSection) {
@@ -150,6 +155,10 @@ class ProductsSectionController {
 				}
 
 				existingSection.products = products;
+			}
+
+			if (position !== undefined) {
+				existingSection.position = position;
 			}
 
 			await existingSection.validate();

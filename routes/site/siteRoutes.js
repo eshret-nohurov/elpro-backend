@@ -13,12 +13,7 @@ router.get('/home', HomePageController.getHomePageData);
 
 router.get(
 	'/products/category/:url',
-	ProductsByUrlController.getProductsByUrlByCategory
-);
-
-router.get(
-	'/products/subcategory/:url',
-	ProductsByUrlController.getProductsByUrlBySubCategory
+	ProductsByUrlController.getProductsByCategoryUrl
 );
 
 router.get('/product/:id', ProductController.getProduct);

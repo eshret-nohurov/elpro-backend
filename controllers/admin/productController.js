@@ -1,6 +1,5 @@
 const Product = require('../../models/Product');
 const Category = require('../../models/Category');
-const Subcategory = require('../../models/Subcategory');
 const { processImage, deleteImage } = require('../../utils/imageHandler');
 
 class ProductController {
@@ -20,7 +19,7 @@ class ProductController {
 				.skip(skip)
 				.limit(limit)
 				.select(
-					'-__v -price -stock -shortDescription -images -fullDescription -specifications -relatedProducts -categories -subcategories'
+					'-__v -price -stock -shortDescription -images -fullDescription -specifications -relatedProducts -categories'
 				)
 				.lean();
 
@@ -111,7 +110,6 @@ class ProductController {
 				fullDescription,
 				relatedProducts,
 				categories,
-				subcategories,
 				specifications,
 			} = req.body;
 
@@ -157,15 +155,8 @@ class ProductController {
 				throw new Error('Хотя бы одна категория обязательна');
 
 			// 3. Проверка существования связанных сущностей
-			const [
-				existingCategories,
-				existingSubcategories,
-				existingRelatedProducts,
-			] = await Promise.all([
+			const [existingCategories, existingRelatedProducts] = await Promise.all([
 				Category.find({ _id: { $in: JSON.parse(categories) } }),
-				subcategories
-					? Subcategory.find({ _id: { $in: JSON.parse(subcategories) } })
-					: Promise.resolve([]),
 				relatedProducts
 					? Product.find({ _id: { $in: JSON.parse(relatedProducts) } })
 					: Promise.resolve([]),
@@ -173,13 +164,6 @@ class ProductController {
 
 			if (existingCategories.length !== JSON.parse(categories).length) {
 				throw new Error('Некоторые категории не найдены');
-			}
-
-			if (
-				subcategories &&
-				existingSubcategories.length !== JSON.parse(subcategories).length
-			) {
-				throw new Error('Некоторые подкатегории не найдены');
 			}
 
 			if (
@@ -230,7 +214,6 @@ class ProductController {
 				})),
 				relatedProducts: relatedProducts ? JSON.parse(relatedProducts) : [],
 				categories: JSON.parse(categories),
-				subcategories: subcategories ? JSON.parse(subcategories) : [],
 			});
 
 			// 6. Валидация и сохранение
@@ -270,7 +253,6 @@ class ProductController {
 				fullDescription,
 				relatedProducts,
 				categories,
-				subcategories,
 				specifications,
 			} = req.body;
 
@@ -351,11 +333,9 @@ class ProductController {
 				}
 			}
 
-			// 6. Подготовка связанных продуктов, категорий и подкатегорий
-			// Инициализируем переменные перед использованием
+			// 6. Подготовка связанных продуктов и категорий
 			let relatedProductsIds = product.relatedProducts;
 			let categoriesIds = product.categories;
-			let subcategoriesIds = product.subcategories;
 
 			if (relatedProducts) {
 				const parsedRelated = JSON.parse(relatedProducts);
@@ -391,19 +371,6 @@ class ProductController {
 				categoriesIds = parsedCategories;
 			}
 
-			if (subcategories) {
-				const parsedSubcategories = JSON.parse(subcategories);
-				const existingSubcategories = await Subcategory.find({
-					_id: { $in: parsedSubcategories },
-				});
-
-				if (existingSubcategories.length !== parsedSubcategories.length) {
-					throw new Error('Некоторые подкатегории не найдены');
-				}
-
-				subcategoriesIds = parsedSubcategories;
-			}
-
 			// 7. Подготовка данных для обновления
 			const updateData = {
 				name: {
@@ -427,7 +394,6 @@ class ProductController {
 				specifications: parsedSpecs,
 				relatedProducts: relatedProductsIds,
 				categories: categoriesIds,
-				subcategories: subcategoriesIds,
 			};
 
 			// 8. Обновляем продукт
@@ -436,7 +402,7 @@ class ProductController {
 				runValidators: true,
 			});
 
-			// 9. Обновляем связи с категориями и подкатегориями
+			// 9. Обновляем связи с категориями
 			// Удаляем продукт из старых категорий, которые больше не связаны
 			const oldCategories = product.categories.filter(
 				catId => !categoriesIds.includes(catId.toString())
@@ -455,28 +421,6 @@ class ProductController {
 			if (newCategories.length > 0) {
 				await Category.updateMany(
 					{ _id: { $in: newCategories } },
-					{ $addToSet: { products: id } }
-				);
-			}
-
-			// Удаляем продукт из старых подкатегорий, которые больше не связаны
-			const oldSubcategories = product.subcategories.filter(
-				subId => !subcategoriesIds.includes(subId.toString())
-			);
-			if (oldSubcategories.length > 0) {
-				await Subcategory.updateMany(
-					{ _id: { $in: oldSubcategories } },
-					{ $pull: { products: id } }
-				);
-			}
-
-			// Добавляем продукт в новые подкатегории
-			const newSubcategories = subcategoriesIds.filter(
-				subId => !product.subcategories.includes(subId.toString())
-			);
-			if (newSubcategories.length > 0) {
-				await Subcategory.updateMany(
-					{ _id: { $in: newSubcategories } },
 					{ $addToSet: { products: id } }
 				);
 			}
@@ -537,53 +481,26 @@ class ProductController {
 	}
 
 	// ===========
-	async getSubcategoriesByCategories(req, res) {
+	async getCategoriesForProductForm(req, res) {
 		try {
-			const { categories } = req.body; // Получаем массив ID категорий
+			// Получаем все категории в виде плоского списка
+			const categories = await Category.find().select('name parent').lean();
 
-			// 1. Валидация
-			if (!Array.isArray(categories)) {
-				return res
-					.status(400)
-					.json({ error: 'Параметр categories должен быть массивом' });
-			}
-
-			// 2. Проверка существования категорий
-			const existingCategories = await Category.find({
-				_id: { $in: categories },
-			});
-
-			if (existingCategories.length !== categories.length) {
-				const missingIds = categories.filter(
-					id => !existingCategories.some(c => c._id.equals(id))
-				);
-				return res.status(404).json({
-					error: 'Некоторые категории не найдены',
-					missingIds,
-				});
-			}
-
-			// 3. Получаем ВСЕ подкатегории для этих категорий
-			const allSubcategories = await Subcategory.find({
-				category: { $in: categories },
-			}).lean();
-
-			// 4. Форматируем результат
-			const result = allSubcategories.map(subcat => ({
-				id: subcat._id,
-				name: subcat.name.ru,
+			// Можно добавить логику для построения дерева на фронте,
+			// или отдать как есть, если на фронте используется плоский список с отступами
+			const formattedCategories = categories.map(cat => ({
+				id: cat._id,
+				name: cat.name.ru, // Предполагаем, что в админке используется русский
+				parent: cat.parent,
 			}));
 
-			res.json({
-				success: true,
-				count: result.length,
-				subcategories: result,
+			res.status(200).json({
+				data: formattedCategories,
 			});
 		} catch (error) {
-			console.error('Ошибка получения подкатегорий:', error);
+			console.error('Ошибка получения категорий для формы:', error);
 			res.status(500).json({
-				error: 'Внутренняя ошибка сервера',
-				details: error.message,
+				error: 'Не удалось получить список категорий',
 			});
 		}
 	}

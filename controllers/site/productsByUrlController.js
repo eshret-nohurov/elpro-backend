@@ -1,128 +1,82 @@
-const SettingsModel = require('../../models/Settings');
-const CategoryModel = require('../../models/Category');
-const SubcategoryModel = require('../../models/Subcategory');
+const Category = require('../../models/Category');
+const Product = require('../../models/Product');
+const Settings = require('../../models/Settings');
 
 class ProductsByUrlController {
-	async getProductsByUrlByCategory(req, res) {
-		try {
-			const { url } = req.params;
-
-			const settings = await SettingsModel.findOne()
-				.sort({ createdAt: -1 })
-				.lean();
-
-			const exchangeRate = settings?.usdToTmtRate || 1;
-
-			const category = await CategoryModel.findOne({ url: url })
-				.populate({
-					path: 'products',
-					match: { stock: { $gt: 0 } },
-					select:
-						'-__v -createdAt -shortDescription -fullDescription -specifications -relatedProducts -categories -subcategories',
-				})
-				.select('-__v -createdAt')
-				.lean();
-
-			if (!category) {
-				return res.status(404).json({
-					error: 'Категория не найдена',
-				});
-			}
-
-			if (category.products && category.products.length > 0) {
-				category.products.forEach(product => {
-					product.price = parseFloat((product.price * exchangeRate).toFixed(2));
-				});
-			}
-
-			res.status(200).json({
-				data: {
-					category: {
-						_id: category._id,
-						name: category.name,
-						url: category.url,
-					},
-					products: category.products || [],
-				},
-			});
-		} catch (error) {
-			console.error('Ошибка получения данных:', error);
-
-			if (error.name === 'CastError') {
-				return res.status(400).json({
-					error: 'Неверный формат url',
-				});
-			}
-
-			res.status(500).json({
-				error: 'Не удалось получить данные',
-			});
-		}
+	constructor() {
+		this.getProductsByCategoryUrl = this.getProductsByCategoryUrl.bind(this);
+		this.getAllDescendantCategoryIds =
+			this.getAllDescendantCategoryIds.bind(this);
 	}
 
-	async getProductsByUrlBySubCategory(req, res) {
+	// Рекурсивная функция для сбора всех ID дочерних категорий
+	async getAllDescendantCategoryIds(categoryId) {
+		const children = await Category.find({ parent: categoryId })
+			.select('_id')
+			.lean();
+		let descendantIds = children.map(child => child._id);
+
+		for (const child of children) {
+			const grandChildrenIds = await this.getAllDescendantCategoryIds(
+				child._id
+			);
+			descendantIds = descendantIds.concat(grandChildrenIds);
+		}
+
+		return descendantIds;
+	}
+
+	async getProductsByCategoryUrl(req, res) {
 		try {
 			const { url } = req.params;
 
-			const settings = await SettingsModel.findOne()
-				.sort({ createdAt: -1 })
-				.lean();
-
-			const exchangeRate = settings?.usdToTmtRate || 1;
-
-			const subcategory = await SubcategoryModel.findOne({ url: url })
-				.populate({
-					path: 'products',
-					match: { stock: { $gt: 0 } },
-					select:
-						'-__v -createdAt -shortDescription -fullDescription -specifications -relatedProducts -categories -subcategories',
-				})
-				.populate({
-					path: 'category',
-					select: '-__v -createdAt',
-				})
-				.select('-__v -createdAt')
-				.lean();
-
-			if (!subcategory) {
-				return res.status(404).json({
-					error: 'Под Категория не найдена',
-				});
+			// 1. Находим основную категорию по URL
+			const mainCategory = await Category.findOne({ url }).lean();
+			if (!mainCategory) {
+				return res.status(404).json({ error: 'Категория не найдена' });
 			}
 
-			if (subcategory.products && subcategory.products.length > 0) {
-				subcategory.products.forEach(product => {
+			// 2. Собираем ID основной категории и всех ее потомков
+			const descendantIds = await this.getAllDescendantCategoryIds(
+				mainCategory._id
+			);
+			const allCategoryIds = [mainCategory._id, ...descendantIds];
+
+			// 3. Получаем настройки для курса валют
+			const settings = await Settings.findOne().sort({ createdAt: -1 }).lean();
+			const exchangeRate = settings?.usdToTmtRate || 1;
+
+			// 4. Находим все товары, которые входят в любую из найденных категорий
+			const products = await Product.find({
+				categories: { $in: allCategoryIds },
+				stock: { $gt: 0 },
+			})
+				.select(
+					'-__v -createdAt -shortDescription -fullDescription -specifications -relatedProducts -categories'
+				)
+				.lean();
+
+			// 5. Конвертируем цену
+			if (products.length > 0) {
+				products.forEach(product => {
 					product.price = parseFloat((product.price * exchangeRate).toFixed(2));
 				});
 			}
 
+			// 6. Отдаем результат
 			res.status(200).json({
 				data: {
 					category: {
-						_id: subcategory.category._id,
-						name: subcategory.category.name,
-						url: subcategory.category.url,
+						_id: mainCategory._id,
+						name: mainCategory.name,
+						url: mainCategory.url,
 					},
-					subcategory: {
-						_id: subcategory._id,
-						name: subcategory.name,
-						url: subcategory.url,
-					},
-					products: subcategory.products || [],
+					products: products || [],
 				},
 			});
 		} catch (error) {
-			console.error('Ошибка получения данных:', error);
-
-			if (error.name === 'CastError') {
-				return res.status(400).json({
-					error: 'Неверный формат url',
-				});
-			}
-
-			res.status(500).json({
-				error: 'Не удалось получить данные',
-			});
+			console.error('Ошибка получения продуктов по URL:', error);
+			res.status(500).json({ error: 'Не удалось получить данные' });
 		}
 	}
 }

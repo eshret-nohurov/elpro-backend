@@ -19,10 +19,7 @@ router.get('/categories', catalogController.getCategories);
 
 router.get('/category/:id', catalogController.getCategoryById);
 
-router.get(
-	'/categories-for-subcategory',
-	catalogController.getCategoriesForSubcategory
-);
+router.get('/categories-for-list', catalogController.getCategoriesForList);
 
 router.post(
 	'/create_category',
@@ -37,25 +34,6 @@ router.post(
 );
 
 router.delete('/delete_category/:id', catalogController.deleteCategory);
-
-//! Подкатегории
-router.get('/subcategories', catalogController.getSubCategories);
-
-router.get('/subcategory/:id', catalogController.getSubCategoryById);
-
-router.post(
-	'/create_subcategory',
-	upload.single('icon'),
-	catalogController.createSubcategory
-);
-
-router.post(
-	'/update_subcategory/:id',
-	upload.single('icon'),
-	catalogController.updateSubcategory
-);
-
-router.delete('/delete_subcategory/:id', catalogController.deleteSubcategory);
 
 //! Главный баннер
 router.get('/main_banner_slides', mainBannerController.getSlides);
@@ -140,9 +118,9 @@ router.post(
 	ProductController.updateProduct
 );
 
-router.post(
-	'/selected_subcategories',
-	ProductController.getSubcategoriesByCategories
+router.get(
+	'/categories_for_product',
+	ProductController.getCategoriesForProductForm
 );
 
 router.get('/search_products', ProductController.searchProducts);

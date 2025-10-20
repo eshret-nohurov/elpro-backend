@@ -101,14 +101,6 @@ const ProductSchema = new mongoose.Schema({
 		},
 	},
 
-	// Подкатегории (необязательный массив)
-	subcategories: [
-		{
-			type: mongoose.Schema.Types.ObjectId,
-			ref: 'Subcategory',
-		},
-	],
-
 	// Дата создания
 	createdAt: {
 		type: Date,
@@ -125,16 +117,6 @@ ProductSchema.post('save', async function (doc) {
 			{ _id: { $in: doc.categories } },
 			{ $addToSet: { products: doc._id } }
 		);
-
-	// Добавляем товар во все связанные подкатегории (если они есть)
-	if (doc.subcategories && doc.subcategories.length > 0) {
-		await mongoose
-			.model('Subcategory')
-			.updateMany(
-				{ _id: { $in: doc.subcategories } },
-				{ $addToSet: { products: doc._id } }
-			);
-	}
 });
 
 ProductSchema.post('deleteOne', { document: true }, async function (doc) {
@@ -145,16 +127,6 @@ ProductSchema.post('deleteOne', { document: true }, async function (doc) {
 			{ _id: { $in: doc.categories } },
 			{ $pull: { products: doc._id } }
 		);
-
-	// Удаляем товар из всех подкатегорий (если они были)
-	if (doc.subcategories && doc.subcategories.length > 0) {
-		await mongoose
-			.model('Subcategory')
-			.updateMany(
-				{ _id: { $in: doc.subcategories } },
-				{ $pull: { products: doc._id } }
-			);
-	}
 
 	await mongoose
 		.model('ProductsSection')

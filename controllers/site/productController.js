@@ -18,7 +18,7 @@ class ProductController {
 					path: 'relatedProducts',
 					match: { stock: { $gt: 0 } },
 					select:
-						'-__v -createdAt -shortDescription -fullDescription -specifications -relatedProducts -categories -subcategories',
+						'-__v -createdAt -shortDescription -fullDescription -specifications -relatedProducts -categories',
 					options: { limit: 4 },
 				})
 				.lean();
