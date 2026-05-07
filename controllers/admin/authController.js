@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const User = require('../../models/User');
 const jwt = require('jsonwebtoken');
+const { logAction } = require('../../utils/auditLogger');
 
 class AuthController {
 	async register(req, res) {
@@ -141,6 +142,16 @@ class AuthController {
 			const user = new User({ username, password, role });
 			await user.save();
 
+			await logAction({
+				req,
+				action: 'create',
+				entity: 'user',
+				entityId: user._id,
+				entityName: user.username,
+				description: `Создал пользователя ${user.username}`,
+				meta: { role: user.role },
+			});
+
 			res.status(201).json({
 				message: 'Пользователь успешно создан!',
 			});
@@ -187,6 +198,16 @@ class AuthController {
 				message: 'Данные пользователя успешно обновлены!',
 				user: userData,
 			});
+
+			await logAction({
+				req,
+				action: 'update',
+				entity: 'user',
+				entityId: user._id,
+				entityName: user.username,
+				description: `Редактировал пользователя ${user.username}`,
+				meta: { role: user.role },
+			});
 		} catch (error) {
 			console.error('Ошибка обновления пользователя:', error);
 
@@ -211,6 +232,16 @@ class AuthController {
 			}
 
 			await user.deleteOne();
+
+			await logAction({
+				req,
+				action: 'delete',
+				entity: 'user',
+				entityId: id,
+				entityName: user.username,
+				description: `Удалил пользователя ${user.username}`,
+				meta: { role: user.role },
+			});
 
 			res.status(200).json({
 				message: 'Пользовательо удален',

@@ -8,8 +8,11 @@ const ProductController = require('../../controllers/site/productController');
 const OrderController = require('../../controllers/site/orderController');
 
 router.get('/navigation', LayoutsController.getNav);
+router.get('/settings', LayoutsController.getSettings);
 
 router.get('/home', HomePageController.getHomePageData);
+
+router.get('/search', ProductController.searchProducts.bind(ProductController));
 
 router.get(
 	'/products/category/:url',

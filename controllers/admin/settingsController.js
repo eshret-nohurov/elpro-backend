@@ -1,10 +1,21 @@
 const Settings = require('../../models/Settings');
 
+const normalizeDeliveryPrices = deliveryPrices => {
+	if (!deliveryPrices) return {};
+	if (deliveryPrices instanceof Map) return Object.fromEntries(deliveryPrices);
+	return Object.fromEntries(Object.entries(deliveryPrices));
+};
+
+const normalizeDeliveryPricesForResponse = settings => ({
+	...settings,
+	deliveryPrices: normalizeDeliveryPrices(settings.deliveryPrices),
+});
+
 class SettingsController {
 	async getSettings(req, res) {
 		try {
 			const settings = await Settings.find()
-				.sort({ createdAt: 1 })
+				.sort({ createdAt: -1 })
 				.limit(1)
 				.lean();
 
@@ -13,7 +24,7 @@ class SettingsController {
 			}
 
 			res.status(200).json({
-				data: settings,
+				data: settings.map(normalizeDeliveryPricesForResponse),
 			});
 		} catch (error) {
 			console.error('Ошибка получения настроек:', error);
@@ -26,7 +37,7 @@ class SettingsController {
 
 	async createSettings(req, res) {
 		try {
-			const { usdToTmtRate } = req.body;
+			const { usdToTmtRate, deliveryPrices = {} } = req.body;
 
 			if (!usdToTmtRate) {
 				throw new Error('Курс волют обязателен');
@@ -34,6 +45,7 @@ class SettingsController {
 
 			const settings = new Settings({
 				usdToTmtRate,
+				deliveryPrices,
 			});
 
 			await settings.validate();
@@ -62,7 +74,7 @@ class SettingsController {
 	async updateSettings(req, res) {
 		try {
 			const { id } = req.params;
-			const { usdToTmtRate } = req.body;
+			const { usdToTmtRate, deliveryPrices = {} } = req.body;
 
 			const settings = await Settings.findById(id);
 			if (!settings) {
@@ -71,6 +83,7 @@ class SettingsController {
 
 			const updateData = {
 				usdToTmtRate,
+				deliveryPrices,
 			};
 
 			const updatedSettings = await Settings.findByIdAndUpdate(id, updateData, {

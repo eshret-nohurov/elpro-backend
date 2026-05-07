@@ -1,6 +1,7 @@
 const Category = require('../../models/Category');
 const Product = require('../../models/Product');
 const Settings = require('../../models/Settings');
+const { applyProductPricing } = require('../../utils/pricing');
 
 class ProductsByUrlController {
 	constructor() {
@@ -49,7 +50,6 @@ class ProductsByUrlController {
 			// 4. Находим все товары, которые входят в любую из найденных категорий
 			const products = await Product.find({
 				categories: { $in: allCategoryIds },
-				stock: { $gt: 0 },
 			})
 				.select(
 					'-__v -createdAt -shortDescription -fullDescription -specifications -relatedProducts -categories'
@@ -59,7 +59,7 @@ class ProductsByUrlController {
 			// 5. Конвертируем цену
 			if (products.length > 0) {
 				products.forEach(product => {
-					product.price = parseFloat((product.price * exchangeRate).toFixed(2));
+					applyProductPricing(product, exchangeRate);
 				});
 			}
 

@@ -4,6 +4,7 @@ const FooterBannerModel = require('../../models/FooterBanner');
 const ProductsSectionModel = require('../../models/ProductsSection');
 const ProductModel = require('../../models/Product');
 const SettingsModel = require('../../models/Settings');
+const { applyProductPricing } = require('../../utils/pricing');
 
 class HomePageController {
 	async getHomePageData(req, res) {
@@ -40,7 +41,6 @@ class HomePageController {
 
 			const actualProducts = await ProductModel.find({
 				_id: { $in: allProductIds },
-				stock: { $gt: 0 },
 			})
 				.select(
 					'-__v -createdAt -shortDescription -fullDescription -specifications -relatedProducts -categories'
@@ -48,7 +48,7 @@ class HomePageController {
 				.lean();
 
 			actualProducts.forEach(product => {
-				product.price = parseFloat((product.price * exchangeRate).toFixed(2));
+				applyProductPricing(product, exchangeRate);
 			});
 
 			const productMap = new Map();
@@ -62,7 +62,7 @@ class HomePageController {
 			);
 
 			if (needLatestProducts) {
-				latestProducts = await ProductModel.find({ stock: { $gt: 0 } })
+				latestProducts = await ProductModel.find()
 					.sort({ _id: -1 })
 					.limit(8)
 					.select(
@@ -71,7 +71,7 @@ class HomePageController {
 					.lean();
 
 				latestProducts.forEach(product => {
-					product.price = parseFloat((product.price * exchangeRate).toFixed(2));
+					applyProductPricing(product, exchangeRate);
 				});
 			}
 

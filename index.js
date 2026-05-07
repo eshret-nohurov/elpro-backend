@@ -11,13 +11,26 @@ const siteRoutes = require('./routes/site/siteRoutes');
 
 const app = express();
 
+const allowedOrigins = [
+	process.env.CLIENT_URL,
+	process.env.ADMIN_URL,
+	'http://localhost:3001',
+	'http://127.0.0.1:3001',
+	'http://0.0.0.0:3001',
+	'http://localhost:1828',
+	'http://127.0.0.1:1828',
+	'http://0.0.0.0:1828',
+].filter(Boolean);
+
 // Настройки CORS для Express
 const corsOptions = {
-	origin: [
-		process.env.CLIENT_URL,
-		process.env.ADMIN_URL,
-		'http://localhost:3001',
-	].filter(Boolean),
+	origin: (origin, callback) => {
+		if (!origin || allowedOrigins.includes(origin)) {
+			return callback(null, true);
+		}
+
+		return callback(new Error(`CORS blocked for origin: ${origin}`));
+	},
 	methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
 	credentials: true,
 	optionsSuccessStatus: 204,
@@ -27,8 +40,12 @@ app.use(cors(corsOptions)); // Используем настройки CORS
 
 // Для статических файлов добавляем явные CORS-заголовки
 const staticOptions = {
-	setHeaders: res => {
-		res.setHeader('Access-Control-Allow-Origin', corsOptions.origin.join(', '));
+	setHeaders: (res, filePath, stat) => {
+		const origin = res.req.headers.origin;
+		if (!origin || allowedOrigins.includes(origin)) {
+			res.setHeader('Access-Control-Allow-Origin', origin || '*');
+			res.setHeader('Vary', 'Origin');
+		}
 	},
 };
 

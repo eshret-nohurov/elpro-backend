@@ -52,8 +52,38 @@ const OrdersSchema = new mongoose.Schema({
 				required: true,
 				min: 0,
 			},
+			originalPrice: {
+				type: Number,
+				default: null,
+				min: 0,
+			},
+			hasDiscount: {
+				type: Boolean,
+				default: false,
+			},
+			discountPercent: {
+				type: Number,
+				default: 0,
+				min: 0,
+			},
+			discountExpiresAt: {
+				type: Date,
+				default: null,
+			},
 		},
 	],
+
+	subtotalPrice: {
+		type: Number,
+		default: 0,
+		min: 0,
+	},
+
+	deliveryPrice: {
+		type: Number,
+		default: 0,
+		min: 0,
+	},
 
 	totalPrice: {
 		type: Number,
@@ -67,10 +97,17 @@ const OrdersSchema = new mongoose.Schema({
 		default: 'pending',
 	},
 
+	stockApplied: {
+		type: Boolean,
+		default: false,
+	},
+
 	createdAt: {
 		type: Date,
 		default: Date.now,
 	},
+}, {
+	timestamps: true,
 });
 
 module.exports = mongoose.model('Orders', OrdersSchema);

@@ -31,6 +31,19 @@ const ProductSchema = new mongoose.Schema({
 		min: 0,
 	},
 
+	// Процент скидки. На сайте применяется до discountExpiresAt или бессрочно, если дата не указана.
+	discountPrice: {
+		type: Number,
+		default: null,
+		min: 0,
+		max: 100,
+	},
+
+	discountExpiresAt: {
+		type: Date,
+		default: null,
+	},
+
 	// Количество товара на складе
 	stock: {
 		type: Number,

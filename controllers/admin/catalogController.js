@@ -1,5 +1,8 @@
 const Category = require('../../models/Category');
+const { logAction } = require('../../utils/auditLogger');
 const { processImage, deleteImage } = require('../../utils/imageHandler');
+
+const escapeRegex = value => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 class CatalogController {
 	constructor() {
@@ -17,9 +20,21 @@ class CatalogController {
 			const page = parseInt(req.query.page) || 1;
 			const limit = parseInt(req.query.limit) || 20;
 			const skip = (page - 1) * limit;
+			const search = String(req.query.search || '').trim();
+			const filter = {};
 
-			const totalCount = await Category.countDocuments();
-			const categories = await Category.find()
+			if (search) {
+				const safeSearch = escapeRegex(search);
+				filter.$or = [
+					{ 'name.ru': { $regex: safeSearch, $options: 'i' } },
+					{ 'name.en': { $regex: safeSearch, $options: 'i' } },
+					{ 'name.tm': { $regex: safeSearch, $options: 'i' } },
+					{ url: { $regex: safeSearch, $options: 'i' } },
+				];
+			}
+
+			const totalCount = await Category.countDocuments(filter);
+			const categories = await Category.find(filter)
 				.sort({ _id: -1 })
 				.skip(skip)
 				.limit(limit)
@@ -154,6 +169,15 @@ class CatalogController {
 				});
 			}
 
+			await logAction({
+				req,
+				action: 'create',
+				entity: 'category',
+				entityId: category._id,
+				entityName: category.name.ru,
+				description: `Создал категорию ${category.name.ru}`,
+			});
+
 			res
 				.status(201)
 				.json({ data: category, message: 'Категория успешно создана' });
@@ -225,6 +249,16 @@ class CatalogController {
 				validate: true,
 			});
 
+			await logAction({
+				req,
+				action: 'update',
+				entity: 'category',
+				entityId: updatedCategory._id,
+				entityName: updatedCategory.name.ru,
+				description: `Редактировал категорию ${updatedCategory.name.ru}`,
+				meta: { oldName: categoryToUpdate.name?.ru, newName: updatedCategory.name?.ru },
+			});
+
 			res.status(200).json({
 				data: updatedCategory,
 				message: 'Категория успешно обновлена',
@@ -281,6 +315,15 @@ class CatalogController {
 
 			// Запускаем рекурсивное удаление
 			await this.deleteCategoryRecursive(id);
+
+			await logAction({
+				req,
+				action: 'delete',
+				entity: 'category',
+				entityId: id,
+				entityName: categoryToDelete.name?.ru || '',
+				description: `Удалил категорию ${categoryToDelete.name?.ru || id}`,
+			});
 
 			res
 				.status(200)

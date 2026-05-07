@@ -20,14 +20,16 @@ const transporter = nodemailer.createTransport({
  * @param {string} to - Email получателя
  * @param {string} subject - Тема письма
  * @param {string} text - Текст письма
+ * @param {string} html - HTML версия письма
  * @returns {Promise} - Промис с результатом отправки
  */
-const sendEmail = async (to = '', subject = '', text = '') => {
+const sendEmail = async (to = '', subject = '', text = '', html = '') => {
 	const mailOptions = {
 		from: `"ELPRO" <${process.env.EMAIL_USER}>`,
 		to: to || process.env.EMAIL_TO_USER,
 		subject: subject || 'Поступил новый заказ на сайте',
 		text: text || 'У вас есть новое уведомление.',
+		html: html || undefined,
 	};
 
 	try {

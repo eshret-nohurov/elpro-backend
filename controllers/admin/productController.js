@@ -1,36 +1,148 @@
 const Product = require('../../models/Product');
 const Category = require('../../models/Category');
+const { logAction } = require('../../utils/auditLogger');
 const { processImage, deleteImage } = require('../../utils/imageHandler');
+const { applyProductPricing } = require('../../utils/pricing');
+
+const normalizeDiscount = ({ discountPrice, discountExpiresAt, price }) => {
+	const isPriceEmpty =
+		discountPrice === undefined || discountPrice === null || discountPrice === '';
+	const isDateEmpty =
+		discountExpiresAt === undefined ||
+		discountExpiresAt === null ||
+		discountExpiresAt === '';
+
+	if (isPriceEmpty) {
+		return {
+			discountPrice: null,
+			discountExpiresAt: null,
+		};
+	}
+
+	const parsedDiscountPrice = Number(discountPrice);
+	const parsedExpiresAt = isDateEmpty ? null : new Date(discountExpiresAt);
+
+	if (
+		!Number.isFinite(parsedDiscountPrice) ||
+		parsedDiscountPrice <= 0 ||
+		parsedDiscountPrice >= 100
+	) {
+		throw new Error('Скидка должна быть процентом от 1 до 99');
+	}
+
+	if (parsedExpiresAt && Number.isNaN(parsedExpiresAt.getTime())) {
+		throw new Error('Укажите корректную дату окончания скидки');
+	}
+
+	return {
+		discountPrice: parsedDiscountPrice,
+		discountExpiresAt: parsedExpiresAt,
+	};
+};
+
+const escapeRegex = value => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 class ProductController {
 	async getProducts(req, res) {
 		try {
-			// Параметры пагинации из запроса
 			const page = parseInt(req.query.page) || 1;
 			const limit = parseInt(req.query.limit) || 20;
 			const skip = (page - 1) * limit;
+			const {
+				search = '',
+				discount = '',
+				category = '',
+				stock = '',
+			} = req.query;
+			const now = new Date();
+			const filter = {};
 
-			// 1. Получаем общее количество
-			const totalCount = await Product.countDocuments();
+			if (search) {
+				const safeSearch = escapeRegex(search);
+				filter.$or = [
+					{ 'name.ru': { $regex: safeSearch, $options: 'i' } },
+					{ 'name.en': { $regex: safeSearch, $options: 'i' } },
+					{ 'name.tm': { $regex: safeSearch, $options: 'i' } },
+				];
+			}
 
-			// 2. Получаем категории с пагинацией
-			const products = await Product.find()
+			if (category) {
+				filter.categories = category;
+			}
+
+			if (discount === 'active') {
+				filter.discountPrice = { $gt: 0 };
+				filter.$and = [
+					...(filter.$and || []),
+					{
+						$or: [
+							{ discountExpiresAt: null },
+							{ discountExpiresAt: { $exists: false } },
+							{ discountExpiresAt: { $gte: now } },
+						],
+					},
+				];
+			}
+
+			if (discount === 'expired') {
+				filter.discountPrice = { $gt: 0 };
+				filter.discountExpiresAt = { $lt: now };
+			}
+
+			if (discount === 'none') {
+				filter.$and = [
+					...(filter.$and || []),
+					{
+						$or: [
+							{ discountPrice: null },
+							{ discountPrice: { $exists: false } },
+							{ discountPrice: { $lte: 0 } },
+						],
+					},
+				];
+			}
+
+			if (stock === 'inStock') {
+				filter.stock = { $gt: 0 };
+			}
+
+			if (stock === 'outOfStock') {
+				filter.stock = { $lte: 0 };
+			}
+
+			if (stock === 'lowStock') {
+				filter.stock = { $gt: 0, $lte: 5 };
+			}
+
+			const totalCount = await Product.countDocuments(filter);
+
+			const products = await Product.find(filter)
 				.sort({ _id: -1 })
 				.skip(skip)
 				.limit(limit)
-				.select(
-					'-__v -price -stock -shortDescription -images -fullDescription -specifications -relatedProducts -categories'
-				)
+				.select('name price stock discountPrice discountExpiresAt categories createdAt')
+				.populate('categories', 'name url')
 				.lean();
 
-			// 3. Формируем ответ с метаданными пагинации
 			const totalPages = Math.ceil(totalCount / limit);
 
-			// Преобразуем name из объекта в строку (берём ru)
-			const productsTransformed = products.map(cat => ({
-				...cat,
-				name: cat.name && cat.name.ru ? cat.name.ru : '',
-			}));
+			const productsTransformed = products.map(product => {
+				const rawDiscountExpiresAt = product.discountExpiresAt;
+				const rawDiscountPrice = product.discountPrice;
+				applyProductPricing(product, 1);
+
+				return {
+					...product,
+					name: product.name && product.name.ru ? product.name.ru : '',
+					discountPrice: rawDiscountPrice,
+					discountExpiresAt: rawDiscountExpiresAt,
+					categories: (product.categories || []).map(category => ({
+						_id: category._id,
+						name: category.name?.ru || '',
+						url: category.url,
+					})),
+				};
+			});
 
 			res.status(200).json({
 				data: productsTransformed,
@@ -106,6 +218,8 @@ class ProductController {
 				name,
 				price,
 				stock,
+				discountPrice,
+				discountExpiresAt,
 				shortDescription,
 				fullDescription,
 				relatedProducts,
@@ -154,6 +268,12 @@ class ProductController {
 			if (!categories || categories.length === 0)
 				throw new Error('Хотя бы одна категория обязательна');
 
+			const discountData = normalizeDiscount({
+				discountPrice,
+				discountExpiresAt,
+				price,
+			});
+
 			// 3. Проверка существования связанных сущностей
 			const [existingCategories, existingRelatedProducts] = await Promise.all([
 				Category.find({ _id: { $in: JSON.parse(categories) } }),
@@ -188,6 +308,7 @@ class ProductController {
 					en: parsedName.en || parsedName.ru,
 				},
 				price: Number(price),
+				...discountData,
 				stock: stock ? Number(stock) : 0,
 				shortDescription: {
 					ru: parsedShortDesc.ru,
@@ -220,6 +341,16 @@ class ProductController {
 			await product.validate();
 			await product.save();
 
+			await logAction({
+				req,
+				action: 'create',
+				entity: 'product',
+				entityId: product._id,
+				entityName: product.name.ru,
+				description: `Создал товар ${product.name.ru}`,
+				meta: { price: product.price, stock: product.stock },
+			});
+
 			// 7. Ответ
 			res.status(201).json({
 				data: product,
@@ -249,6 +380,8 @@ class ProductController {
 				name,
 				price,
 				stock,
+				discountPrice,
+				discountExpiresAt,
 				shortDescription,
 				fullDescription,
 				relatedProducts,
@@ -284,6 +417,17 @@ class ProductController {
 				throw new Error('Цена должна быть числом');
 			if (stock && isNaN(Number(stock)))
 				throw new Error('Количество на складе должно быть числом');
+
+			const finalPrice = price ? Number(price) : product.price;
+			const discountData = normalizeDiscount({
+				discountPrice:
+					discountPrice !== undefined ? discountPrice : product.discountPrice,
+				discountExpiresAt:
+					discountExpiresAt !== undefined
+						? discountExpiresAt
+						: product.discountExpiresAt,
+				price: finalPrice,
+			});
 
 			// 4. Обработка изображений
 			let imagePaths = [];
@@ -378,7 +522,8 @@ class ProductController {
 					tm: parsedName.tm || parsedName.ru,
 					en: parsedName.en || parsedName.ru,
 				},
-				price: price ? Number(price) : product.price,
+				price: finalPrice,
+				...discountData,
 				stock: stock ? Number(stock) : product.stock,
 				shortDescription: {
 					ru: parsedShortDesc.ru,
@@ -400,6 +545,27 @@ class ProductController {
 			const updatedProduct = await Product.findByIdAndUpdate(id, updateData, {
 				new: true,
 				runValidators: true,
+			});
+
+			await logAction({
+				req,
+				action: 'update',
+				entity: 'product',
+				entityId: updatedProduct._id,
+				entityName: updatedProduct.name.ru,
+				description: `Редактировал товар ${updatedProduct.name.ru}`,
+				meta: {
+					oldName: product.name?.ru,
+					newName: updatedProduct.name?.ru,
+					oldPrice: product.price,
+					newPrice: updatedProduct.price,
+					oldStock: product.stock,
+					newStock: updatedProduct.stock,
+					oldDiscountPrice: product.discountPrice,
+					newDiscountPrice: updatedProduct.discountPrice,
+					oldDiscountExpiresAt: product.discountExpiresAt,
+					newDiscountExpiresAt: updatedProduct.discountExpiresAt,
+				},
 			});
 
 			// 9. Обновляем связи с категориями
@@ -466,6 +632,15 @@ class ProductController {
 			// Используем deleteOne для активации post-хука в модели
 			await product.deleteOne();
 
+			await logAction({
+				req,
+				action: 'delete',
+				entity: 'product',
+				entityId: id,
+				entityName: product.name?.ru || '',
+				description: `Удалил товар ${product.name?.ru || id}`,
+			});
+
 			res.status(200).json({
 				message: 'Продукт успешно удален',
 				deletedId: id,
@@ -526,14 +701,24 @@ class ProductController {
 				],
 			})
 				.limit(20) // Ограничиваем количество результатов
-				.select('name') // Выбираем только нужные поля
+				.select('name price stock discountPrice discountExpiresAt') // Выбираем только нужные поля
 				.lean();
 
 			// 3. Форматирование результата
-			const results = products.map(product => ({
-				id: product._id,
-				name: product.name.ru,
-			}));
+			const results = products.map(product => {
+				applyProductPricing(product, 1);
+
+				return {
+					id: product._id,
+					name: product.name.ru,
+					price: product.price,
+					originalPrice: product.originalPrice,
+					hasDiscount: product.hasDiscount,
+					discountPercent: product.discountPercent,
+					discountExpiresAt: product.discountExpiresAt,
+					stock: product.stock,
+				};
+			});
 
 			res.json({
 				count: results.length,

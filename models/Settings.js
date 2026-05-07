@@ -7,6 +7,12 @@ const SettingsSchema = new mongoose.Schema({
 		min: 0,
 	},
 
+	deliveryPrices: {
+		type: Map,
+		of: Number,
+		default: {},
+	},
+
 	createdAt: {
 		type: Date,
 		default: Date.now,

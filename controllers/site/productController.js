@@ -1,7 +1,12 @@
 const SettingsModel = require('../../models/Settings');
 const ProductModel = require('../../models/Product');
+const { applyProductPricing } = require('../../utils/pricing');
 
 class ProductController {
+	escapeRegex(value) {
+		return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
+
 	async getProduct(req, res) {
 		try {
 			const { id } = req.params;
@@ -21,6 +26,10 @@ class ProductController {
 						'-__v -createdAt -shortDescription -fullDescription -specifications -relatedProducts -categories',
 					options: { limit: 4 },
 				})
+				.populate({
+					path: 'categories',
+					select: 'name url',
+				})
 				.lean();
 
 			if (!product) {
@@ -29,11 +38,11 @@ class ProductController {
 				});
 			}
 
-			product.price = parseFloat((product.price * exchangeRate).toFixed(2));
+			applyProductPricing(product, exchangeRate);
 
 			if (product.relatedProducts && product.relatedProducts.length > 0) {
 				product.relatedProducts.forEach(related => {
-					related.price = parseFloat((related.price * exchangeRate).toFixed(2));
+					applyProductPricing(related, exchangeRate);
 				});
 			}
 
@@ -51,6 +60,64 @@ class ProductController {
 
 			res.status(500).json({
 				error: 'Не удалось получить данные',
+			});
+		}
+	}
+
+	async searchProducts(req, res) {
+		try {
+			const query = String(req.query.query || '').trim();
+
+			if (query.length < 2) {
+				return res.status(200).json({
+					count: 0,
+					results: [],
+				});
+			}
+
+			const settings = await SettingsModel.findOne()
+				.sort({ createdAt: -1 })
+				.lean();
+			const exchangeRate = settings?.usdToTmtRate || 1;
+			const safeQuery = this.escapeRegex(query);
+
+			const products = await ProductModel.find({
+				stock: { $gt: 0 },
+				$or: [
+					{ 'name.ru': { $regex: safeQuery, $options: 'i' } },
+					{ 'name.en': { $regex: safeQuery, $options: 'i' } },
+					{ 'name.tm': { $regex: safeQuery, $options: 'i' } },
+				],
+			})
+				.limit(8)
+				.select('name price discountPrice discountExpiresAt images stock')
+				.lean();
+
+			const results = products.map(product => {
+				applyProductPricing(product, exchangeRate);
+
+				return {
+					_id: product._id,
+					name: product.name,
+					price: product.price,
+					originalPrice: product.originalPrice,
+					discountPrice: product.discountPrice,
+					discountPercent: product.discountPercent,
+					discountExpiresAt: product.discountExpiresAt,
+					hasDiscount: product.hasDiscount,
+					image: product.images?.[0] || null,
+					stock: product.stock,
+				};
+			});
+
+			res.status(200).json({
+				count: results.length,
+				results,
+			});
+		} catch (error) {
+			console.error('Ошибка поиска товаров:', error);
+			res.status(500).json({
+				error: 'Не удалось выполнить поиск',
 			});
 		}
 	}

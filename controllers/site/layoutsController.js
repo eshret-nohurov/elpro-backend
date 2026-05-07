@@ -1,4 +1,11 @@
 const Category = require('../../models/Category');
+const Settings = require('../../models/Settings');
+
+const normalizeDeliveryPrices = deliveryPrices => {
+	if (!deliveryPrices) return {};
+	if (deliveryPrices instanceof Map) return Object.fromEntries(deliveryPrices);
+	return Object.fromEntries(Object.entries(deliveryPrices));
+};
 
 class LayoutsController {
 	async getNav(req, res) {
@@ -41,6 +48,21 @@ class LayoutsController {
 		} catch (error) {
 			console.error('Ошибка получения навигации:', error);
 			res.status(500).json({ error: 'Не удалось загрузить навигацию' });
+		}
+	}
+
+	async getSettings(req, res) {
+		try {
+			const settings = await Settings.findOne().sort({ createdAt: -1 }).lean();
+
+			res.status(200).json({
+				data: {
+					deliveryPrices: normalizeDeliveryPrices(settings?.deliveryPrices),
+				},
+			});
+		} catch (error) {
+			console.error('Ошибка получения настроек сайта:', error);
+			res.status(500).json({ error: 'Не удалось загрузить настройки' });
 		}
 	}
 }

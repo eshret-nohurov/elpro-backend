@@ -10,9 +10,20 @@ const mainBannerController = require('../../controllers/admin/mainBannerControll
 const catalogController = require('../../controllers/admin/catalogController');
 const authMiddleware = require('../../middlewares/authMiddleware');
 
+const DashboardController = require('../../controllers/admin/dashboardController');
+const AuditLogController = require('../../controllers/admin/auditLogController');
+const OrderController = require('../../controllers/admin/orderController');
 const ProductController = require('../../controllers/admin/productController');
 
 router.use(authMiddleware);
+
+//! Dashboard
+router.get('/dashboard', DashboardController.getDashboard);
+
+//! Logs
+router.get('/logs', AuditLogController.getLogs);
+
+router.get('/logs/users', AuditLogController.getLogUsers);
 
 //! Категории
 router.get('/categories', catalogController.getCategories);
@@ -167,5 +178,16 @@ router.get('/settings', SettingsController.getSettings);
 router.post('/settings/create', SettingsController.createSettings);
 
 router.post('/settings/update/:id', SettingsController.updateSettings);
+
+//! Orders
+router.get('/orders', OrderController.getOrders);
+
+router.post('/orders/create', OrderController.createOrder);
+
+router.get('/orders/:id', OrderController.getOrderById);
+
+router.post('/orders/:id/update', OrderController.updateOrder);
+
+router.patch('/orders/:id/status', OrderController.updateOrderStatus);
 
 module.exports = router;
