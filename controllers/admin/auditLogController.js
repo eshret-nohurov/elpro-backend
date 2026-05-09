@@ -1,3 +1,7 @@
+/*
+ * Audit Log Admin
+ * Отдает журнал действий и список пользователей для фильтрации событий.
+ */
 const AuditLog = require('../../models/AuditLog');
 const User = require('../../models/User');
 

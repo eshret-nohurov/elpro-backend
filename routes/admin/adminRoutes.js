@@ -1,3 +1,7 @@
+/*
+ * Admin Routes
+ * Собирает защищенные маршруты админки для каталога, заказов, логов, настроек и пользователей.
+ */
 const express = require('express');
 const router = express.Router();
 const upload = require('../../utils/multerConfig');
@@ -17,15 +21,15 @@ const ProductController = require('../../controllers/admin/productController');
 
 router.use(authMiddleware);
 
-//! Dashboard
+
 router.get('/dashboard', DashboardController.getDashboard);
 
-//! Logs
+
 router.get('/logs', AuditLogController.getLogs);
 
 router.get('/logs/users', AuditLogController.getLogUsers);
 
-//! Категории
+
 router.get('/categories', catalogController.getCategories);
 
 router.get('/category/:id', catalogController.getCategoryById);
@@ -46,7 +50,7 @@ router.post(
 
 router.delete('/delete_category/:id', catalogController.deleteCategory);
 
-//! Главный баннер
+
 router.get('/main_banner_slides', mainBannerController.getSlides);
 
 router.get('/main_banner_slide/:id', mainBannerController.getSlideById);
@@ -68,7 +72,7 @@ router.delete(
 	mainBannerController.deleteSlide
 );
 
-//! Промо баннер
+
 router.get('/promo_banner_slides', PromoBannerController.getSlides);
 
 router.get('/promo_banner_slide/:id', PromoBannerController.getSlideById);
@@ -90,7 +94,7 @@ router.delete(
 	PromoBannerController.deleteSlide
 );
 
-//! Футер баннер
+
 router.get('/footer_banner_slides', FooterBannerController.getSlides);
 
 router.get('/footer_banner_slide/:id', FooterBannerController.getSlideById);
@@ -112,7 +116,7 @@ router.delete(
 	FooterBannerController.deleteSlide
 );
 
-//! PRODUCT
+
 router.get('/products', ProductController.getProducts);
 
 router.get('/product/:id', ProductController.getProductById);
@@ -138,7 +142,7 @@ router.get('/search_products', ProductController.searchProducts);
 
 router.delete('/delete_product/:id', ProductController.deleteProduct);
 
-//! PRODUCTS SECTION
+
 router.get('/products_section', ProductsSectionController.getProductsSection);
 
 router.get(
@@ -161,7 +165,7 @@ router.delete(
 	ProductsSectionController.deleteProductsSection
 );
 
-//! USERS
+
 router.get('/users', AuthController.getUsers);
 
 router.get('/users/:id', AuthController.getUserById);
@@ -172,14 +176,14 @@ router.post('/users/update/:id', AuthController.updateUsers);
 
 router.delete('/users/delete/:id', AuthController.deleteUser);
 
-//! Settings
+
 router.get('/settings', SettingsController.getSettings);
 
 router.post('/settings/create', SettingsController.createSettings);
 
 router.post('/settings/update/:id', SettingsController.updateSettings);
 
-//! Orders
+
 router.get('/orders', OrderController.getOrders);
 
 router.post('/orders/create', OrderController.createOrder);

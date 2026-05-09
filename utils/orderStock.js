@@ -1,3 +1,7 @@
+/*
+ * Stock Sync
+ * Сравнивает старое и новое состояние заказа, чтобы корректно уменьшать или возвращать остатки.
+ */
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 

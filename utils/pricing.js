@@ -1,3 +1,7 @@
+/*
+ * Pricing Rules
+ * Применяет курс валют и активные процентные скидки перед отдачей товара или созданием заказа.
+ */
 const hasActiveDiscount = product => {
 	const price = Number(product?.price || 0);
 	const discountPercent = Number(product?.discountPrice || 0);

@@ -4,6 +4,8 @@ node_modules/
 # Файлы окружения
 .env
 .env.local
+.env.*
+!.env.example
 
 # Логи
 npm-debug.log*
@@ -16,5 +18,18 @@ dist/
 out/
 .DS_Store
 
+# Пользовательские файлы и дампы
 /uploads/*
-!/uploads/.gitkeep 
+!/uploads/.gitkeep
+backups/
+backup/
+dumps/
+dump/
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+*.zip
+*.sql
+*.bson
+*.archive

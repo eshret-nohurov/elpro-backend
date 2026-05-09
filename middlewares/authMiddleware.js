@@ -1,9 +1,13 @@
+/*
+ * Auth Guard
+ * Проверяет JWT, загружает пользователя и передает его дальше в защищенные маршруты.
+ */
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 const authMiddleware = async (req, res, next) => {
 	try {
-		// Получаем токен из заголовка Authorization
+
 		const authHeader = req.headers.authorization;
 
 		if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -14,10 +18,10 @@ const authMiddleware = async (req, res, next) => {
 
 		const token = authHeader.split(' ')[1];
 
-		// Верификация токена
+
 		const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-		// Поиск пользователя в базе
+
 		const user = await User.findById(decoded.userId).select('-password');
 		if (!user) {
 			return res.status(401).json({
@@ -25,7 +29,7 @@ const authMiddleware = async (req, res, next) => {
 			});
 		}
 
-		// Добавляем пользователя в объект запроса
+
 		req.user = user;
 		next();
 	} catch (error) {

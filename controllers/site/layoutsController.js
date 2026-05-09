@@ -1,3 +1,7 @@
+/*
+ * Site Layout Data
+ * Готовит дерево категорий и настройки, которые нужны публичной части сайта.
+ */
 const Category = require('../../models/Category');
 const Settings = require('../../models/Settings');
 
@@ -10,7 +14,7 @@ const normalizeDeliveryPrices = deliveryPrices => {
 class LayoutsController {
 	async getNav(req, res) {
 		try {
-			// Функция для рекурсивной загрузки дочерних элементов
+
 			const populateChildren = async category => {
 				if (!category.children || category.children.length === 0) {
 					return category;
@@ -31,13 +35,13 @@ class LayoutsController {
 				return category;
 			};
 
-			// 1. Находим все категории верхнего уровня (у которых нет родителя)
+
 			const topLevelCategories = await Category.find({ parent: null })
 				.sort({ position: 1 })
 				.select('-__v -createdAt -parent -products')
 				.lean();
 
-			// 2. Рекурсивно заполняем дочерние элементы для каждой категории верхнего уровня
+
 			const navTree = await Promise.all(
 				topLevelCategories.map(category => populateChildren(category))
 			);

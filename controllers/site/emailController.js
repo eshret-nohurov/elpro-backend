@@ -1,7 +1,11 @@
+/*
+ * Mail Transport
+ * Создает SMTP-транспорт и отправляет письма от имени настроенной почты магазина.
+ */
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Создаем транспорт один раз
+
 const transporter = nodemailer.createTransport({
 	service: 'gmail',
 	auth: {
@@ -15,14 +19,7 @@ const transporter = nodemailer.createTransport({
 	debug: true,
 });
 
-/**
- * Отправляет электронное письмо
- * @param {string} to - Email получателя
- * @param {string} subject - Тема письма
- * @param {string} text - Текст письма
- * @param {string} html - HTML версия письма
- * @returns {Promise} - Промис с результатом отправки
- */
+
 const sendEmail = async (to = '', subject = '', text = '', html = '') => {
 	const mailOptions = {
 		from: `"ELPRO" <${process.env.EMAIL_USER}>`,

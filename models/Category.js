@@ -1,3 +1,7 @@
+/*
+ * Category Model
+ * Описывает дерево категорий и очищает связи с товарами при удалении категории.
+ */
 const mongoose = require('mongoose');
 
 const CategorySchema = new mongoose.Schema({
@@ -52,7 +56,7 @@ const CategorySchema = new mongoose.Schema({
 });
 
 CategorySchema.pre('deleteOne', { document: true }, async function (next) {
-	// Удаляем эту категорию из всех товаров
+
 	await mongoose
 		.model('Product')
 		.updateMany({ categories: this._id }, { $pull: { categories: this._id } });

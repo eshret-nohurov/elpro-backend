@@ -1,3 +1,7 @@
+/*
+ * Admin Auth
+ * Проверяет пользователя админки, пароль, роль и выдает токен для дальнейшей работы.
+ */
 require('dotenv').config();
 
 const User = require('../../models/User');
@@ -40,7 +44,7 @@ class AuthController {
 				});
 			}
 
-			// Проверка пароля
+
 			const isMatch = await user.comparePassword(password);
 			if (!isMatch) {
 				return res.status(401).json({
@@ -48,7 +52,7 @@ class AuthController {
 				});
 			}
 
-			// Генерация токена
+
 			const token = jwt.sign(
 				{ userId: user._id, role: user.role },
 				process.env.JWT_SECRET,

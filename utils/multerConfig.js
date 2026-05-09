@@ -1,10 +1,14 @@
+/*
+ * Upload Config
+ * Проверяет загружаемые изображения и ограничивает размер файлов до безопасного лимита.
+ */
 const multer = require('multer');
 const path = require('path');
 
-// Храним файлы в памяти для последующей обработки
+
 const storage = multer.memoryStorage();
 
-// Фильтр для изображений
+
 const fileFilter = (req, file, cb) => {
 	const allowedTypes = [
 		'image/svg+xml',
@@ -26,7 +30,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
 	storage: storage,
 	fileFilter,
-	limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+	limits: { fileSize: 5 * 1024 * 1024 },
 });
 
 module.exports = upload;

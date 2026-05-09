@@ -1,3 +1,7 @@
+/*
+ * Product Model
+ * Описывает товар, скидку, остаток, изображения, характеристики и связи с категориями.
+ */
 const mongoose = require('mongoose');
 
 const SpecSchema = new mongoose.Schema(
@@ -17,21 +21,21 @@ const SpecSchema = new mongoose.Schema(
 );
 
 const ProductSchema = new mongoose.Schema({
-	// Название товара на 3 языках
+
 	name: {
 		ru: { type: String, required: true },
 		tm: { type: String },
 		en: { type: String },
 	},
 
-	// Цена
+
 	price: {
 		type: Number,
 		required: true,
 		min: 0,
 	},
 
-	// Процент скидки. На сайте применяется до discountExpiresAt или бессрочно, если дата не указана.
+
 	discountPrice: {
 		type: Number,
 		default: null,
@@ -44,7 +48,7 @@ const ProductSchema = new mongoose.Schema({
 		default: null,
 	},
 
-	// Количество товара на складе
+
 	stock: {
 		type: Number,
 		required: true,
@@ -52,36 +56,36 @@ const ProductSchema = new mongoose.Schema({
 		default: 0,
 	},
 
-	// Короткое описание на 3 языках
+
 	shortDescription: {
 		ru: { type: String, required: true },
 		tm: { type: String },
 		en: { type: String },
 	},
 
-	// Изображения (максимум 4)
+
 	images: {
 		type: [String],
 		validate: {
 			validator: function (v) {
-				return v.length <= 4 && v.length > 0; // Минимум 1 изображение
+				return v.length <= 4 && v.length > 0;
 			},
 			message: 'Должно быть от 1 до 4 изображений',
 		},
 		required: true,
 	},
 
-	// Полное описание на 3 языках
+
 	fullDescription: {
 		ru: { type: String, required: true },
 		tm: { type: String },
 		en: { type: String },
 	},
 
-	// Характеристики
+
 	specifications: [SpecSchema],
 
-	// Связанные продукты (максимум 4)
+
 	relatedProducts: {
 		type: [
 			{
@@ -97,7 +101,7 @@ const ProductSchema = new mongoose.Schema({
 		},
 	},
 
-	// Категории (обязательный массив с минимум 1 элементом)
+
 	categories: {
 		type: [
 			{
@@ -114,16 +118,16 @@ const ProductSchema = new mongoose.Schema({
 		},
 	},
 
-	// Дата создания
+
 	createdAt: {
 		type: Date,
 		default: Date.now,
 	},
 });
 
-// Хуки для управления связями
+
 ProductSchema.post('save', async function (doc) {
-	// Добавляем товар во все связанные категории
+
 	await mongoose
 		.model('Category')
 		.updateMany(
@@ -133,7 +137,7 @@ ProductSchema.post('save', async function (doc) {
 });
 
 ProductSchema.post('deleteOne', { document: true }, async function (doc) {
-	// Удаляем товар из всех категорий
+
 	await mongoose
 		.model('Category')
 		.updateMany(

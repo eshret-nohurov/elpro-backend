@@ -1,3 +1,7 @@
+/*
+ * Order Admin
+ * Управляет заказами из админки, синхронизирует остатки и отправляет уведомления.
+ */
 const OrdersModel = require('../../models/Orders');
 const SettingsModel = require('../../models/Settings');
 const sendEmail = require('../site/emailController');

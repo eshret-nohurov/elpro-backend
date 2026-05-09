@@ -1,3 +1,7 @@
+/*
+ * Catalog Admin
+ * Управляет деревом категорий, связями родителей и дочерних элементов, иконками и удалением.
+ */
 const Category = require('../../models/Category');
 const { logAction } = require('../../utils/auditLogger');
 const { processImage, deleteImage } = require('../../utils/imageHandler');
@@ -14,7 +18,7 @@ class CatalogController {
 		this.deleteCategoryRecursive = this.deleteCategoryRecursive.bind(this);
 	}
 
-	// Получить плоский список всех категорий для админки
+
 	async getCategories(req, res) {
 		try {
 			const page = parseInt(req.query.page) || 1;
@@ -65,7 +69,7 @@ class CatalogController {
 		}
 	}
 
-	// Получить одну категорию по ID
+
 	async getCategoryById(req, res) {
 		try {
 			const { id } = req.params;
@@ -85,7 +89,7 @@ class CatalogController {
 		}
 	}
 
-	// Получить категории для выпадающего списка при создании/редактировании категории
+
 	async getCategoriesForList(req, res) {
 		try {
 			const categories = await Category.find({})
@@ -115,7 +119,7 @@ class CatalogController {
 		}
 	}
 
-	// Создать новую категорию
+
 	async createCategory(req, res) {
 		try {
 			const { name, url, parentId, position } = req.body;
@@ -162,7 +166,7 @@ class CatalogController {
 			await category.validate();
 			await category.save();
 
-			// Если указан родитель, добавляем новую категорию в его список дочерних
+
 			if (parentId) {
 				await Category.findByIdAndUpdate(parentId, {
 					$push: { children: category._id },
@@ -187,7 +191,7 @@ class CatalogController {
 		}
 	}
 
-	// Обновить категорию
+
 	async updateCategory(req, res) {
 		try {
 			const { id } = req.params;
@@ -206,7 +210,7 @@ class CatalogController {
 
 			let iconPath = categoryToUpdate.icon;
 			if (file) {
-				// Удаляем старые иконки
+
 				deleteImage(categoryToUpdate.icon);
 
 				const { svg, png } = await processImage(file, 'categories', true);
@@ -215,16 +219,16 @@ class CatalogController {
 
 			const oldParentId = categoryToUpdate.parent;
 
-			// Если родитель изменился
+
 			if (String(oldParentId) !== String(parentId)) {
-				// Убираем из списка дочерних у старого родителя
+
 				if (oldParentId) {
 					await Category.findByIdAndUpdate(oldParentId, {
 						$pull: { children: id },
 					});
 				}
 
-				// Добавляем в список дочерних к новому родителю
+
 				if (parentId) {
 					await Category.findByIdAndUpdate(parentId, {
 						$push: { children: id },
@@ -269,13 +273,13 @@ class CatalogController {
 		}
 	}
 
-	// Рекурсивная функция удаления категории и всех ее потомков
+
 	async deleteCategoryRecursive(categoryId) {
 		try {
 			const category = await Category.findById(categoryId);
 			if (!category) return;
 
-			// Рекурсивно удаляем всех детей
+
 			if (category.children && category.children.length > 0) {
 				await Promise.all(
 					category.children.map(childId =>
@@ -284,10 +288,10 @@ class CatalogController {
 				);
 			}
 
-			// Удаляем саму категорию
+
 			await Category.findByIdAndDelete(categoryId);
 
-			// Если есть иконка, удаляем ее
+
 			if (category.icon) {
 				await deleteImage(category.icon);
 			}
@@ -296,7 +300,7 @@ class CatalogController {
 		}
 	}
 
-	// Удалить категорию
+
 	async deleteCategory(req, res) {
 		try {
 			const { id } = req.params;
@@ -306,14 +310,14 @@ class CatalogController {
 				return res.status(404).json({ error: 'Категория не найдена' });
 			}
 
-			// Убираем категорию из списка дочерних у родителя
+
 			if (categoryToDelete.parent) {
 				await Category.findByIdAndUpdate(categoryToDelete.parent, {
 					$pull: { children: id },
 				});
 			}
 
-			// Запускаем рекурсивное удаление
+
 			await this.deleteCategoryRecursive(id);
 
 			await logAction({

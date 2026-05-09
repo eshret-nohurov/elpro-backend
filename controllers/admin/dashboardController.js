@@ -1,3 +1,7 @@
+/*
+ * Dashboard API
+ * Считает показатели для главной страницы админки с учетом роли пользователя.
+ */
 const OrdersModel = require('../../models/Orders');
 const ProductModel = require('../../models/Product');
 

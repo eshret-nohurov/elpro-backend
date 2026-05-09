@@ -1,3 +1,7 @@
+/*
+ * Site Orders
+ * Создает заказы с сайта, пересчитывает цены на сервере, двигает остатки и отправляет письма.
+ */
 const OrdersModel = require('../../models/Orders');
 const ProductModel = require('../../models/Product');
 const SettingsModel = require('../../models/Settings');

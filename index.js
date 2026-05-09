@@ -1,9 +1,13 @@
+/*
+ * Server Bootstrap
+ * Настраивает Express, CORS, статику, маршруты, обработчики ошибок и подключение к MongoDB.
+ */
 require('dotenv').config();
 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path'); // Добавляем модуль path
+const path = require('path');
 
 const adminRoutes = require('./routes/admin/adminRoutes');
 const authRoutes = require('./routes/admin/authRoutes');
@@ -22,7 +26,7 @@ const allowedOrigins = [
 	'http://0.0.0.0:1828',
 ].filter(Boolean);
 
-// Настройки CORS для Express
+
 const corsOptions = {
 	origin: (origin, callback) => {
 		if (!origin || allowedOrigins.includes(origin)) {
@@ -36,9 +40,9 @@ const corsOptions = {
 	optionsSuccessStatus: 204,
 };
 
-app.use(cors(corsOptions)); // Используем настройки CORS
+app.use(cors(corsOptions));
 
-// Для статических файлов добавляем явные CORS-заголовки
+
 const staticOptions = {
 	setHeaders: (res, filePath, stat) => {
 		const origin = res.req.headers.origin;
@@ -49,7 +53,7 @@ const staticOptions = {
 	},
 };
 
-// Обслуживание статических файлов с CORS
+
 app.use(
 	'/uploads',
 	express.static(path.join(__dirname, 'uploads'), staticOptions)
@@ -58,14 +62,14 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Админ Роуты
+
 app.use('/api/admin/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 
-// Сайт Роуты
+
 app.use('/api', siteRoutes);
 
-// Обработка 404
+
 app.use((req, res) => {
 	res.status(404).json({
 		success: false,
@@ -73,7 +77,7 @@ app.use((req, res) => {
 	});
 });
 
-// Обработка ошибок
+
 app.use((err, req, res, next) => {
 	console.error(err.stack);
 	res.status(500).json({

@@ -1,3 +1,7 @@
+/*
+ * Product Sections Admin
+ * Управляет секциями товаров на главной странице и их порядком показа.
+ */
 const ProductsSection = require('../../models/ProductsSection');
 const Product = require('../../models/Product');
 

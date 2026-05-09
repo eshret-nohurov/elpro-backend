@@ -1,3 +1,7 @@
+/*
+ * Site Product
+ * Отдает карточку товара с пересчитанной ценой, активной скидкой и публичными данными.
+ */
 const SettingsModel = require('../../models/Settings');
 const ProductModel = require('../../models/Product');
 const { applyProductPricing } = require('../../utils/pricing');

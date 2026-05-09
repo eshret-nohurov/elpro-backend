@@ -1,3 +1,7 @@
+/*
+ * Settings Admin
+ * Управляет настройками магазина, курсом валют, контактами и ценами доставки.
+ */
 const Settings = require('../../models/Settings');
 
 const normalizeDeliveryPrices = deliveryPrices => {

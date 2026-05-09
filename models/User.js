@@ -1,3 +1,7 @@
+/*
+ * User Model
+ * Хранит пользователей админки и отвечает за хеширование и проверку паролей.
+ */
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -25,7 +29,7 @@ const UserSchema = new mongoose.Schema({
 	},
 });
 
-// Хеширование пароля перед сохранением
+
 UserSchema.pre('save', async function (next) {
 	if (!this.isModified('password')) return next();
 
@@ -38,7 +42,7 @@ UserSchema.pre('save', async function (next) {
 	}
 });
 
-// Метод для сравнения паролей
+
 UserSchema.methods.comparePassword = async function (candidatePassword) {
 	return await bcrypt.compare(candidatePassword, this.password);
 };

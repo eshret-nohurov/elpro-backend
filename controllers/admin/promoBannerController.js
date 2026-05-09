@@ -1,18 +1,22 @@
+/*
+ * Promo Banner Admin
+ * Управляет промо-баннерами и сохраняет их изображения через общий обработчик файлов.
+ */
 const PromoBanner = require('../../models/PromoBanner');
 const { processImage, deleteImage } = require('../../utils/imageHandler');
 
 class PromoBannerController {
 	async getSlides(req, res) {
 		try {
-			// Параметры пагинации из запроса
+
 			const page = parseInt(req.query.page) || 1;
 			const limit = parseInt(req.query.limit) || 20;
 			const skip = (page - 1) * limit;
 
-			// 1. Получаем общее количество слайдов
+
 			const totalCount = await PromoBanner.countDocuments();
 
-			// 2. Получаем слайды с пагинацией
+
 			const slides = await PromoBanner.find()
 				.sort({ _id: -1 })
 				.skip(skip)
@@ -20,7 +24,7 @@ class PromoBannerController {
 				.select('-__v -image -url')
 				.lean();
 
-			// 3. Формируем ответ с метаданными пагинации
+
 			const totalPages = Math.ceil(totalCount / limit);
 
 			res.status(200).json({
@@ -47,10 +51,10 @@ class PromoBannerController {
 		try {
 			const { id } = req.params;
 
-			// 1. Находим слайд по ID
+
 			const slide = await PromoBanner.findById(id).select('-__v').lean();
 
-			// 2. Если слайд не найден
+
 			if (!slide) {
 				return res.status(404).json({
 					error: 'Слайд не найден',
@@ -63,7 +67,7 @@ class PromoBannerController {
 		} catch (error) {
 			console.error('Ошибка получения слайда:', error);
 
-			// Проверяем, если ошибка связана с невалидным ID
+
 			if (error.name === 'CastError') {
 				return res.status(400).json({
 					error: 'Неверный формат ID слайда',
@@ -81,7 +85,7 @@ class PromoBannerController {
 			const { name, url } = req.body;
 			const file = req.file;
 
-			// 1. Валидация входящих данных
+
 			if (!file) {
 				throw new Error('Изображение обязательна');
 			}
@@ -90,18 +94,18 @@ class PromoBannerController {
 				throw new Error('Название обязательно');
 			}
 
-			// 2. Обработка иконки
+
 			const { webp } = await processImage(file, 'promoBanner');
 			const imagePath = webp;
 
-			// 3. Создание слайда
+
 			const slide = new PromoBanner({
 				name,
 				image: imagePath,
 				url,
 			});
 
-			// 4. Валидация и сохранение
+
 			await slide.validate();
 			await slide.save();
 
@@ -132,16 +136,16 @@ class PromoBannerController {
 			const { name, url } = req.body;
 			const file = req.file;
 
-			// 1. Находим слайд
+
 			const slide = await PromoBanner.findById(id);
 			if (!slide) {
 				throw new Error('Слайд не найден');
 			}
 
-			// 2. Обработка Изображение (если новая передана)
+
 			let imagePath = slide.image;
 			if (file) {
-				// Удаляем старое изображение
+
 				deleteImage(slide.image);
 
 				const { webp } = await processImage(file, 'promoBanner');
@@ -188,18 +192,18 @@ class PromoBannerController {
 		try {
 			const { id } = req.params;
 
-			// 1. Находим и удаляем слайд
+
 			const slide = await PromoBanner.findByIdAndDelete(id);
 			if (!slide) {
 				throw new Error('Слайд не найден');
 			}
 
-			// 2. Удаляем связанные изображения (если есть)
+
 			if (slide.image) {
 				await deleteImage(slide.image);
 			}
 
-			// 3. Формируем ответ
+
 			res.status(200).json({
 				data: {
 					deletedSlide: slide,

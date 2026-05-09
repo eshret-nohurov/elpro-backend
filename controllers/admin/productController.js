@@ -1,3 +1,7 @@
+/*
+ * Product Admin
+ * Создает, редактирует, фильтрует и удаляет товары вместе с изображениями, скидками и категориями.
+ */
 const Product = require('../../models/Product');
 const Category = require('../../models/Category');
 const { logAction } = require('../../utils/auditLogger');
@@ -168,7 +172,7 @@ class ProductController {
 		try {
 			const { id } = req.params;
 
-			// 1. Находим продукт по ID
+
 			const product = await Product.findById(id)
 				.select('-__v')
 				.populate({
@@ -178,14 +182,14 @@ class ProductController {
 				})
 				.lean();
 
-			// 2. Если продукт не найдена
+
 			if (!product) {
 				return res.status(404).json({
 					error: 'Продукт не найдена',
 				});
 			}
 
-			// 3. Преобразуем relatedProducts в нужный формат
+
 			if (product.relatedProducts && product.relatedProducts.length > 0) {
 				product.relatedProducts = product.relatedProducts.map(item => ({
 					id: item._id,
@@ -199,7 +203,7 @@ class ProductController {
 		} catch (error) {
 			console.error('Ошибка получения продукта:', error);
 
-			// Проверяем, если ошибка связана с невалидным ID
+
 			if (error.name === 'CastError') {
 				return res.status(400).json({
 					error: 'Неверный формат ID категории',
@@ -229,12 +233,12 @@ class ProductController {
 
 			const files = req.files;
 
-			// 1. Парсинг сложных JSON-полей
+
 			const parsedName = JSON.parse(name);
 			const parsedShortDesc = JSON.parse(shortDescription);
 			const parsedFullDesc = JSON.parse(fullDescription);
 
-			// Обработка характеристик
+
 			let parsedSpecs = [];
 			if (specifications) {
 				try {
@@ -257,7 +261,7 @@ class ProductController {
 				}
 			}
 
-			// 2. Валидация обязательных полей
+
 			if (!parsedName.ru) throw new Error('Русское название обязательно');
 			if (!price) throw new Error('Цена обязательна');
 			if (!parsedShortDesc.ru) throw new Error('Краткое описание обязательно');
@@ -274,7 +278,7 @@ class ProductController {
 				price,
 			});
 
-			// 3. Проверка существования связанных сущностей
+
 			const [existingCategories, existingRelatedProducts] = await Promise.all([
 				Category.find({ _id: { $in: JSON.parse(categories) } }),
 				relatedProducts
@@ -293,14 +297,14 @@ class ProductController {
 				throw new Error('Некоторые связанные товары не найдены');
 			}
 
-			// 4. Обработка изображений
+
 			const imageProcessingPromises = files.map(file =>
 				processImage(file, 'products', false)
 			);
 			const processedImages = await Promise.all(imageProcessingPromises);
 			const imagePaths = processedImages.map(img => img.webp);
 
-			// 5. Создание товара
+
 			const product = new Product({
 				name: {
 					ru: parsedName.ru,
@@ -337,7 +341,7 @@ class ProductController {
 				categories: JSON.parse(categories),
 			});
 
-			// 6. Валидация и сохранение
+
 			await product.validate();
 			await product.save();
 
@@ -351,7 +355,7 @@ class ProductController {
 				meta: { price: product.price, stock: product.stock },
 			});
 
-			// 7. Ответ
+
 			res.status(201).json({
 				data: product,
 				message: 'Товар успешно создан',
@@ -391,13 +395,13 @@ class ProductController {
 
 			const files = req.files;
 
-			// 1. Находим продукт
+
 			const product = await Product.findById(id);
 			if (!product) {
 				throw new Error('Товар не найден');
 			}
 
-			// 2. Парсинг сложных JSON-полей (если они переданы)
+
 			const parsedName = name ? JSON.parse(name) : product.name;
 			const parsedShortDesc = shortDescription
 				? JSON.parse(shortDescription)
@@ -406,7 +410,7 @@ class ProductController {
 				? JSON.parse(fullDescription)
 				: product.fullDescription;
 
-			// 3. Валидация обязательных полей
+
 			if (name && !parsedName.ru)
 				throw new Error('Русское название обязательно');
 			if (shortDescription && !parsedShortDesc.ru)
@@ -429,31 +433,31 @@ class ProductController {
 				price: finalPrice,
 			});
 
-			// 4. Обработка изображений
+
 			let imagePaths = [];
 
-			// Если пришли новые файлы - удаляем все старые изображения
+
 			if (files && files.length > 0) {
-				// Удаляем все старые изображения с сервера
+
 				await Promise.all(product.images.map(img => deleteImage(img)));
 
-				// Обрабатываем новые изображения
+
 				const imageProcessingPromises = files.map(file =>
 					processImage(file, 'products', false)
 				);
 				const processedImages = await Promise.all(imageProcessingPromises);
 				imagePaths = processedImages.map(img => img.webp);
 			} else {
-				// Если новые файлы не пришли - оставляем старые изображения
+
 				imagePaths = [...product.images];
 			}
 
-			// Проверка общего количества изображений
+
 			if (imagePaths.length > 4) throw new Error('Максимум 4 изображения');
 			if (imagePaths.length === 0)
 				throw new Error('Должно быть хотя бы одно изображение');
 
-			// 5. Обработка характеристик
+
 			let parsedSpecs = product.specifications;
 			if (specifications) {
 				try {
@@ -477,7 +481,7 @@ class ProductController {
 				}
 			}
 
-			// 6. Подготовка связанных продуктов и категорий
+
 			let relatedProductsIds = product.relatedProducts;
 			let categoriesIds = product.categories;
 
@@ -515,7 +519,7 @@ class ProductController {
 				categoriesIds = parsedCategories;
 			}
 
-			// 7. Подготовка данных для обновления
+
 			const updateData = {
 				name: {
 					ru: parsedName.ru,
@@ -541,7 +545,7 @@ class ProductController {
 				categories: categoriesIds,
 			};
 
-			// 8. Обновляем продукт
+
 			const updatedProduct = await Product.findByIdAndUpdate(id, updateData, {
 				new: true,
 				runValidators: true,
@@ -568,8 +572,7 @@ class ProductController {
 				},
 			});
 
-			// 9. Обновляем связи с категориями
-			// Удаляем продукт из старых категорий, которые больше не связаны
+
 			const oldCategories = product.categories.filter(
 				catId => !categoriesIds.includes(catId.toString())
 			);
@@ -580,7 +583,7 @@ class ProductController {
 				);
 			}
 
-			// Добавляем продукт в новые категории
+
 			const newCategories = categoriesIds.filter(
 				catId => !product.categories.includes(catId.toString())
 			);
@@ -616,7 +619,7 @@ class ProductController {
 		try {
 			const { id } = req.params;
 
-			// 1. Находим продукт
+
 			const product = await Product.findById(id);
 			if (!product) {
 				return res.status(404).json({
@@ -624,12 +627,11 @@ class ProductController {
 				});
 			}
 
-			// 2. Удаляем изображения продукта
+
 			const deletePromises = product.images.map(image => deleteImage(image));
 			await Promise.all(deletePromises);
 
-			// 3. Удаляем сам продукт
-			// Используем deleteOne для активации post-хука в модели
+
 			await product.deleteOne();
 
 			await logAction({
@@ -655,17 +657,16 @@ class ProductController {
 		}
 	}
 
-	// ===========
+
 	async getCategoriesForProductForm(req, res) {
 		try {
-			// Получаем все категории в виде плоского списка
+
 			const categories = await Category.find().select('name parent').lean();
 
-			// Можно добавить логику для построения дерева на фронте,
-			// или отдать как есть, если на фронте используется плоский список с отступами
+
 			const formattedCategories = categories.map(cat => ({
 				id: cat._id,
-				name: cat.name.ru, // Предполагаем, что в админке используется русский
+				name: cat.name.ru,
 				parent: cat.parent,
 			}));
 
@@ -682,9 +683,9 @@ class ProductController {
 
 	async searchProducts(req, res) {
 		try {
-			const { query } = req.query; // Получаем строку поиска из query-параметров
+			const { query } = req.query;
 
-			// 1. Валидация
+
 			if (!query || typeof query !== 'string') {
 				return res.status(400).json({
 					success: false,
@@ -692,19 +693,19 @@ class ProductController {
 				});
 			}
 
-			// 2. Поиск по названию (регистронезависимый)
+
 			const products = await Product.find({
 				$or: [
-					{ 'name.ru': { $regex: query, $options: 'i' } }, // Русское название
-					{ 'name.en': { $regex: query, $options: 'i' } }, // Английское название
-					{ 'name.tm': { $regex: query, $options: 'i' } }, // Туркменское название
+					{ 'name.ru': { $regex: query, $options: 'i' } },
+					{ 'name.en': { $regex: query, $options: 'i' } },
+					{ 'name.tm': { $regex: query, $options: 'i' } },
 				],
 			})
-				.limit(20) // Ограничиваем количество результатов
-				.select('name price stock discountPrice discountExpiresAt') // Выбираем только нужные поля
+				.limit(20)
+				.select('name price stock discountPrice discountExpiresAt')
 				.lean();
 
-			// 3. Форматирование результата
+
 			const results = products.map(product => {
 				applyProductPricing(product, 1);
 

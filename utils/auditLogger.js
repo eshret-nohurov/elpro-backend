@@ -1,3 +1,7 @@
+/*
+ * Audit Logger
+ * Записывает действия пользователей в журнал без остановки основного бизнес-процесса.
+ */
 const AuditLog = require('../models/AuditLog');
 
 const getUserInfo = req => ({

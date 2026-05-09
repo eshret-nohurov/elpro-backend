@@ -1,3 +1,7 @@
+/*
+ * Order Emails
+ * Формирует HTML-письма для клиента и внутренних уведомлений о новом заказе.
+ */
 const formatPrice = value => `${Number(value || 0).toLocaleString('ru-RU')} тмт`;
 
 const escapeHtml = value =>

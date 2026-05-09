@@ -1,3 +1,7 @@
+/*
+ * Home Data
+ * Собирает баннеры, секции товаров и промо-блоки для главной страницы сайта.
+ */
 const MainBannerModel = require('../../models/MainBanner');
 const PromoBannerModel = require('../../models/PromoBanner');
 const FooterBannerModel = require('../../models/FooterBanner');
