@@ -6,81 +6,9 @@ require('dotenv').config();
 
 const User = require('../../models/User');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 const { logAction } = require('../../utils/auditLogger');
 
-const CAPTCHA_TTL_MS = 5 * 60 * 1000;
-const CAPTCHA_OPERATIONS = ['+', '-'];
-
-const getCaptchaSecret = () => process.env.CAPTCHA_SECRET || process.env.JWT_SECRET;
-
-const signCaptchaPayload = payload => crypto
-	.createHmac('sha256', getCaptchaSecret())
-	.update(payload)
-	.digest('hex');
-
-const createCaptchaToken = answer => {
-	const payload = JSON.stringify({
-		answer,
-		expiresAt: Date.now() + CAPTCHA_TTL_MS,
-		nonce: crypto.randomBytes(8).toString('hex'),
-	});
-	const signature = signCaptchaPayload(payload);
-
-	return Buffer
-		.from(`${payload}.${signature}`)
-		.toString('base64url');
-};
-
-const verifyCaptcha = ({ captchaToken, captchaAnswer }) => {
-	try {
-		if (!captchaToken || captchaAnswer === undefined || captchaAnswer === null) {
-			return false;
-		}
-
-		const decoded = Buffer.from(captchaToken, 'base64url').toString('utf8');
-		const separatorIndex = decoded.lastIndexOf('.');
-		if (separatorIndex === -1) return false;
-
-		const payload = decoded.slice(0, separatorIndex);
-		const signature = decoded.slice(separatorIndex + 1);
-		const expectedSignature = signCaptchaPayload(payload);
-
-		if (!crypto.timingSafeEqual(
-			Buffer.from(signature),
-			Buffer.from(expectedSignature)
-		)) {
-			return false;
-		}
-
-		const data = JSON.parse(payload);
-		const answer = Number(captchaAnswer);
-
-		return (
-			Date.now() <= Number(data.expiresAt) &&
-			Number.isFinite(answer) &&
-			answer === Number(data.answer)
-		);
-	} catch (error) {
-		return false;
-	}
-};
-
 class AuthController {
-	async captcha(req, res) {
-		const operation = CAPTCHA_OPERATIONS[
-			Math.floor(Math.random() * CAPTCHA_OPERATIONS.length)
-		];
-		const left = Math.floor(Math.random() * 8) + 2;
-		const right = Math.floor(Math.random() * 8) + 1;
-		const answer = operation === '+' ? left + right : left - right;
-
-		res.json({
-			question: `${left} ${operation} ${right}`,
-			token: createCaptchaToken(answer),
-		});
-	}
-
 	async register(req, res) {
 		try {
 			const { username, password } = req.body;
@@ -107,14 +35,7 @@ class AuthController {
 
 	async login(req, res) {
 		try {
-			const { username, password, captchaToken, captchaAnswer } = req.body;
-
-			if (!verifyCaptcha({ captchaToken, captchaAnswer })) {
-				return res.status(400).json({
-					error: 'Капча введена неверно или устарела',
-				});
-			}
-
+			const { username, password } = req.body;
 			const user = await User.findOne({ username });
 
 			if (!user) {
