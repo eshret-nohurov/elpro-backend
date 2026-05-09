@@ -9,6 +9,7 @@ const AuthController = require('../../controllers/admin/authController');
 
 router.post('/registration', AuthController.register);
 
+router.get('/captcha', AuthController.captcha);
 
 router.post('/login', AuthController.login);
 
