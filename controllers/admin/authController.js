@@ -8,6 +8,53 @@ const User = require('../../models/User');
 const jwt = require('jsonwebtoken');
 const { logAction } = require('../../utils/auditLogger');
 
+const RECAPTCHA_VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
+const RECAPTCHA_LOGIN_ACTION = 'admin_login';
+const RECAPTCHA_MIN_SCORE = Number(process.env.RECAPTCHA_MIN_SCORE || 0.5);
+
+const verifyRecaptcha = async ({ token, action, ip }) => {
+	if (!process.env.RECAPTCHA_SECRET_KEY) {
+		const error = new Error('reCAPTCHA не настроена на сервере');
+		error.statusCode = 500;
+		throw error;
+	}
+
+	if (!token) {
+		const error = new Error('Проверка reCAPTCHA не пройдена');
+		error.statusCode = 400;
+		throw error;
+	}
+
+	const params = new URLSearchParams({
+		secret: process.env.RECAPTCHA_SECRET_KEY,
+		response: token,
+	});
+
+	if (ip) {
+		params.append('remoteip', ip);
+	}
+
+	const response = await fetch(RECAPTCHA_VERIFY_URL, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+		},
+		body: params,
+	});
+
+	const result = await response.json();
+	const isValidAction = !result.action || result.action === action;
+	const score = Number(result.score || 0);
+
+	if (!result.success || !isValidAction || score < RECAPTCHA_MIN_SCORE) {
+		const error = new Error('Проверка reCAPTCHA не пройдена');
+		error.statusCode = 400;
+		throw error;
+	}
+
+	return result;
+};
+
 class AuthController {
 	async register(req, res) {
 		try {
@@ -35,7 +82,19 @@ class AuthController {
 
 	async login(req, res) {
 		try {
-			const { username, password } = req.body;
+			const {
+				username,
+				password,
+				recaptchaToken,
+				recaptchaAction = RECAPTCHA_LOGIN_ACTION,
+			} = req.body;
+
+			await verifyRecaptcha({
+				token: recaptchaToken,
+				action: recaptchaAction,
+				ip: req.ip,
+			});
+
 			const user = await User.findOne({ username });
 
 			if (!user) {
@@ -69,8 +128,8 @@ class AuthController {
 				},
 			});
 		} catch (error) {
-			res.status(500).json({
-				message: error.message,
+			res.status(error.statusCode || 500).json({
+				error: error.message,
 			});
 		}
 	}
