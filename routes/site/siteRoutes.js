@@ -6,6 +6,7 @@ const HomePageController = require('../../controllers/site/homePageController');
 const ProductsByUrlController = require('../../controllers/site/productsByUrlController');
 const ProductController = require('../../controllers/site/productController');
 const OrderController = require('../../controllers/site/orderController');
+const SeoController = require('../../controllers/site/seoController');
 
 router.get('/navigation', LayoutsController.getNav);
 router.get('/settings', LayoutsController.getSettings);
@@ -20,6 +21,8 @@ router.get(
 );
 
 router.get('/product/:id', ProductController.getProduct);
+
+router.get('/seo/sitemap', SeoController.getSitemapData);
 
 router.post('/create-order', OrderController.createOrder);
 

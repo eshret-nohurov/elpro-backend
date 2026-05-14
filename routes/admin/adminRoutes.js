@@ -57,13 +57,19 @@ router.get('/main_banner_slide/:id', mainBannerController.getSlideById);
 
 router.post(
 	'/create_main_banner_slide',
-	upload.single('image'),
+	upload.fields([
+		{ name: 'image', maxCount: 1 },
+		{ name: 'mobileImage', maxCount: 1 },
+	]),
 	mainBannerController.createSlide
 );
 
 router.post(
 	'/update_main_banner_slide/:id',
-	upload.single('image'),
+	upload.fields([
+		{ name: 'image', maxCount: 1 },
+		{ name: 'mobileImage', maxCount: 1 },
+	]),
 	mainBannerController.updateSlide
 );
 
@@ -193,5 +199,7 @@ router.get('/orders/:id', OrderController.getOrderById);
 router.post('/orders/:id/update', OrderController.updateOrder);
 
 router.patch('/orders/:id/status', OrderController.updateOrderStatus);
+
+router.delete('/orders/:id', OrderController.deleteOrder);
 
 module.exports = router;

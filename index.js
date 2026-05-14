@@ -12,8 +12,14 @@ const path = require('path');
 const adminRoutes = require('./routes/admin/adminRoutes');
 const authRoutes = require('./routes/admin/authRoutes');
 const siteRoutes = require('./routes/site/siteRoutes');
+const adminErrorAuditMiddleware = require('./middlewares/adminErrorAuditMiddleware');
 
 const app = express();
+
+app.use((req, res, next) => {
+	res.setHeader('X-Developer', 'Eshret Nohutov');
+	next();
+});
 
 const allowedOrigins = [
 	process.env.CLIENT_URL,
@@ -62,6 +68,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use(adminErrorAuditMiddleware);
 
 app.use('/api/admin/auth', authRoutes);
 app.use('/api/admin', adminRoutes);

@@ -42,6 +42,12 @@ const badRequest = message => {
 	throw error;
 };
 
+const forbidden = message => {
+	const error = new Error(message);
+	error.statusCode = 403;
+	throw error;
+};
+
 const getDeliveryPrice = async ({ location, isPickup }) => {
 	if (isPickup) return 0;
 
@@ -353,6 +359,38 @@ class AdminOrderController {
 								.map(err => err.message)
 								.join(', ')
 						: error.message,
+			});
+		}
+	}
+
+	async deleteOrder(req, res) {
+		try {
+			if (req.user?.username !== 'eshret') {
+				forbidden('Удалять заказы может только пользователь eshret');
+			}
+
+			const existingOrder = await OrdersModel.findById(req.params.id).lean();
+			if (!existingOrder) {
+				return res.status(404).json({ error: 'Заказ не найден' });
+			}
+
+			await syncOrderStock({
+				oldOrder: existingOrder,
+				newOrder: {
+					...existingOrder,
+					status: 'cancelled',
+				},
+			});
+
+			await OrdersModel.findByIdAndDelete(req.params.id);
+
+			res.status(200).json({
+				message: 'Заказ удален',
+			});
+		} catch (error) {
+			console.error('Ошибка удаления заказа:', error);
+			res.status(getErrorStatus(error)).json({
+				error: error.message || 'Не удалось удалить заказ',
 			});
 		}
 	}

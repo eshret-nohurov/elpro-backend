@@ -11,6 +11,12 @@ const { logAction } = require('../../utils/auditLogger');
 const RECAPTCHA_VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
 const RECAPTCHA_LOGIN_ACTION = 'admin_login';
 const RECAPTCHA_MIN_SCORE = Number(process.env.RECAPTCHA_MIN_SCORE || 0.5);
+const PROTECTED_USERNAME = 'eshret';
+
+const isProtectedUsername = username =>
+	String(username || '').trim().toLowerCase() === PROTECTED_USERNAME;
+
+const isProtectedUser = user => isProtectedUsername(user?.username);
 
 const verifyRecaptcha = async ({ token, action, ip }) => {
 	if (!process.env.RECAPTCHA_SECRET_KEY) {
@@ -189,6 +195,12 @@ class AuthController {
 		try {
 			const { username, password, role } = req.body;
 
+			if (isProtectedUsername(username)) {
+				return res.status(403).json({
+					error: 'Пользователя eshret можно создать только вручную на сервере',
+				});
+			}
+
 			const existingUser = await User.findOne({ username });
 			if (existingUser) {
 				return res.status(400).json({
@@ -235,6 +247,12 @@ class AuthController {
 			const user = await User.findById(id);
 			if (!user) {
 				return res.status(404).json({ error: 'Пользователь не найден' });
+			}
+
+			if (isProtectedUser(user)) {
+				return res.status(403).json({
+					error: 'Нельзя редактировать пользователя eshret',
+				});
 			}
 
 			if (role) {
@@ -291,6 +309,12 @@ class AuthController {
 			if (!user) {
 				return res.status(404).json({
 					error: 'Пользователь не найден',
+				});
+			}
+
+			if (isProtectedUser(user)) {
+				return res.status(403).json({
+					error: 'Нельзя удалять пользователя eshret',
 				});
 			}
 

@@ -9,6 +9,9 @@ const MainBannerSchema = new mongoose.Schema({
 		type: String,
 		required: true,
 	},
+	mobileImage: {
+		type: String,
+	},
 	url: {
 		type: String,
 	},

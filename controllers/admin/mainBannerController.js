@@ -83,11 +83,16 @@ class MainBannerController {
 	async createSlide(req, res) {
 		try {
 			const { name, url } = req.body;
-			const file = req.file;
+			const desktopFile = req.files?.image?.[0];
+			const mobileFile = req.files?.mobileImage?.[0];
 
 
-			if (!file) {
-				throw new Error('Изображение обязательна');
+			if (!desktopFile) {
+				throw new Error('Desktop изображение обязательно');
+			}
+
+			if (!mobileFile) {
+				throw new Error('Mobile/tablet изображение обязательно');
 			}
 
 			if (!name) {
@@ -95,13 +100,16 @@ class MainBannerController {
 			}
 
 
-			const { webp } = await processImage(file, 'mainBanner');
+			const { webp } = await processImage(desktopFile, 'mainBanner');
 			const imagePath = webp;
+			const { webp: mobileWebp } = await processImage(mobileFile, 'mainBanner');
+			const mobileImagePath = mobileWebp;
 
 
 			const slide = new MainBanner({
 				name,
 				image: imagePath,
+				mobileImage: mobileImagePath,
 				url,
 			});
 
@@ -134,7 +142,8 @@ class MainBannerController {
 		try {
 			const { id } = req.params;
 			const { name, url } = req.body;
-			const file = req.file;
+			const desktopFile = req.files?.image?.[0];
+			const mobileFile = req.files?.mobileImage?.[0];
 
 
 			const slide = await MainBanner.findById(id);
@@ -144,18 +153,29 @@ class MainBannerController {
 
 
 			let imagePath = slide.image;
-			if (file) {
+			let mobileImagePath = slide.mobileImage;
+			if (desktopFile) {
 
 				deleteImage(slide.image);
 
-				const { webp } = await processImage(file, 'mainBanner');
+				const { webp } = await processImage(desktopFile, 'mainBanner');
 				imagePath = webp;
+			}
+
+			if (mobileFile) {
+				if (slide.mobileImage) {
+					deleteImage(slide.mobileImage);
+				}
+
+				const { webp } = await processImage(mobileFile, 'mainBanner');
+				mobileImagePath = webp;
 			}
 
 			const updateData = {
 				name,
 				url,
 				image: imagePath,
+				mobileImage: mobileImagePath,
 			};
 
 			const updatedBanner = await MainBanner.findByIdAndUpdate(id, updateData, {
@@ -199,6 +219,9 @@ class MainBannerController {
 				await deleteImage(slide.image);
 			}
 
+			if (slide.mobileImage) {
+				await deleteImage(slide.mobileImage);
+			}
 
 			res.status(200).json({
 				data: {

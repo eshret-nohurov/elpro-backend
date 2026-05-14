@@ -6,7 +6,7 @@
 		"dev": "nodemon index.js",
 		"start": "node index"
 	},
-	"author": "Eshret Nohurov",
+	"author": "Eshret Nohutov",
 	"license": "ISC",
 	"dependencies": {
 		"bcryptjs": "^3.0.2",
