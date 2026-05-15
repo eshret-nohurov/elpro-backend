@@ -8,7 +8,6 @@ const SENSITIVE_KEYS = new Set([
 	'password',
 	'newPassword',
 	'token',
-	'recaptchaToken',
 	'authorization',
 	'cookie',
 ]);

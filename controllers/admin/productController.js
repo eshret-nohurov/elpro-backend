@@ -8,6 +8,21 @@ const { logAction } = require('../../utils/auditLogger');
 const { processImage, deleteImage } = require('../../utils/imageHandler');
 const { applyProductPricing } = require('../../utils/pricing');
 
+const ASHGABAT_TIMEZONE_OFFSET = '+05:00';
+
+const parseAshgabatDatetime = value => {
+	if (!value) return null;
+	if (value instanceof Date) return value;
+
+	const normalizedValue = String(value).trim();
+	const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalizedValue);
+	const valueWithTimezone = hasTimezone
+		? normalizedValue
+		: `${normalizedValue}${ASHGABAT_TIMEZONE_OFFSET}`;
+
+	return new Date(valueWithTimezone);
+};
+
 const normalizeDiscount = ({ discountPrice, discountExpiresAt, price }) => {
 	const isPriceEmpty =
 		discountPrice === undefined || discountPrice === null || discountPrice === '';
@@ -24,7 +39,7 @@ const normalizeDiscount = ({ discountPrice, discountExpiresAt, price }) => {
 	}
 
 	const parsedDiscountPrice = Number(discountPrice);
-	const parsedExpiresAt = isDateEmpty ? null : new Date(discountExpiresAt);
+	const parsedExpiresAt = isDateEmpty ? null : parseAshgabatDatetime(discountExpiresAt);
 
 	if (
 		!Number.isFinite(parsedDiscountPrice) ||
